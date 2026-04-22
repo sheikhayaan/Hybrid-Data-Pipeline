@@ -12,3 +12,22 @@ This was built to practice cross-language system integration and data ingestion 
 ## Tech Stack
 * **C++:** File I/O, Memory Handling, Data Simulation
 * **Python:** Pandas, Scikit-Learn, Random Forest, Data Analytics
+
+## Expected Console Output
+When the pipeline is executed on a local machine, the system processes the generated C++ data and outputs the following metrics:
+
+## Expected Console Output
+When the pipeline is executed on a local machine, the system processes the generated C++ data and outputs the following metrics:
+
+## Expected Console Output
+When the pipeline is executed on a local machine, the system processes the generated C++ data and outputs the following metrics:
+
+```text
+Starting Python ML Pipeline...
+Loading data from synthetic_housing_data.csv...
+Training Random Forest Regressor...
+
+--- Pipeline Results ---
+Model Mean Absolute Error: 12.45 Lakhs
+Model Accuracy (R2 Score): 0.87
+Pipeline execution finished successfully.
