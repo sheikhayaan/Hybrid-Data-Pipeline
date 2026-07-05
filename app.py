@@ -133,10 +133,20 @@ else:
             "The file may be stale or was overwritten by another process."
         )
 
-    st.dataframe(df.head(20), use_container_width=True)
+    st.caption(f"Showing first 20 of {actual_rows} total rows")
+    show_all = st.checkbox("Show all rows")
+    st.dataframe(df if show_all else df.head(20), width="stretch")
+
+    col_download, _ = st.columns([1, 3])
+    col_download.download_button(
+        label="Download full CSV",
+        data=df.to_csv(index=False),
+        file_name="synthetic_housing_data.csv",
+        mime="text/csv",
+    )
 
     st.write("Summary statistics")
-    st.dataframe(df.describe(), use_container_width=True)
+    st.dataframe(df.describe(), width="stretch")
 
     histogram = px.histogram(
         df,
@@ -145,7 +155,7 @@ else:
         title="Price Distribution",
         labels={"price_lakhs": "Price (Lakhs)"},
     )
-    st.plotly_chart(histogram, use_container_width=True)
+    st.plotly_chart(histogram)
 
     sqft_scatter = px.scatter(
         df,
@@ -155,7 +165,7 @@ else:
         title="Sqft vs Price",
         labels={"sqft": "Sqft", "price_lakhs": "Price (Lakhs)", "bedrooms": "Bedrooms"},
     )
-    st.plotly_chart(sqft_scatter, use_container_width=True)
+    st.plotly_chart(sqft_scatter)
 
     metro_scatter = px.scatter(
         df,
@@ -164,7 +174,7 @@ else:
         title="Metro Distance vs Price",
         labels={"metro_distance_km": "Metro Distance (km)", "price_lakhs": "Price (Lakhs)"},
     )
-    st.plotly_chart(metro_scatter, use_container_width=True)
+    st.plotly_chart(metro_scatter)
 
 st.subheader("Model Training")
 if st.button("Train Model"):
@@ -190,7 +200,7 @@ if st.button("Train Model"):
                 title="Feature Importances",
                 labels={"feature": "Feature", "importance": "Importance"},
             )
-            st.plotly_chart(importance_chart, use_container_width=True)
+            st.plotly_chart(importance_chart)
 
             actual = training_result["y_test"].reset_index(drop=True)
             predicted = pd.Series(training_result["predictions"], name="predicted_price_lakhs")
@@ -221,7 +231,7 @@ if st.button("Train Model"):
                     line={"dash": "dash", "color": "red"},
                 )
             )
-            st.plotly_chart(predicted_chart, use_container_width=True)
+            st.plotly_chart(predicted_chart)
 
 st.info(METRIC_CAPTION)
 
