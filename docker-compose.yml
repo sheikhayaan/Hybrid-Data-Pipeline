@@ -1,0 +1,7 @@
+services:
+  hybrid-data-pipeline:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      PORT: 8501

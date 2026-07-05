@@ -1,0 +1,51 @@
+name: Build Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install C++ compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Compile C++ data engine
+        run: g++ -O2 data_engine.cpp -o data_engine
+
+      - name: Generate synthetic data
+        run: ./data_engine 1000
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run model pipeline and verify metrics
+        run: |
+          python model_pipeline.py | tee model_output.txt
+          grep -q "Mean Absolute Error:" model_output.txt
+          grep -q "R2 Score:" model_output.txt
+
+      - name: Smoke test Streamlit app
+        run: |
+          streamlit run app.py --server.headless true --server.port 8501 > streamlit.log 2>&1 &
+          STREAMLIT_PID=$!
+          sleep 10
+          curl --fail http://localhost:8501
+          kill "$STREAMLIT_PID"
+
+      - name: Build Docker image
+        run: docker build -t test-image .

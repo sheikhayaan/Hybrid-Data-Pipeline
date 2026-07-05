@@ -1,3 +1,4 @@
-'pandas'
-'scikit-lern'
-'numpy'
+streamlit
+pandas
+scikit-learn
+plotly
