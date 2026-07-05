@@ -30,58 +30,57 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Custom CSS — injected once via st.markdown with unsafe_allow_html=True.
-# Styles: sans-serif font stack, metric card shadows/borders, section spacing,
-# and a deep-teal accent for buttons and headers instead of Streamlit's red.
+# Custom CSS — theme-safe. We never override text colours, so metric values,
+# headings, and numbers stay readable in both light and dark Streamlit themes.
+# Only borders, spacing, shadows, and the teal button accent are customised.
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* ── Font stack ─────────────────────────────────────────────────────── */
+    /* Sans-serif font stack for the whole app */
     html, body, [class*="st-"] {
         font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* ── Section breathing room ──────────────────────────────────────────── */
+    /* Section breathing room */
     .block-container {
         padding-top: 2.5rem;
         padding-bottom: 2.5rem;
     }
-    section[data-testid="stVerticalBlock"] > div,
-    div[data-testid="stVerticalBlock"] > div {
-        gap: 0.6rem;
-    }
 
-    /* ── Metric cards: subtle border + shadow ──────────────────────────── */
-    [data-testid="stMetricValue"] {
-        background: #ffffff;
-        border: 1px solid #e0e7ee;
-        border-radius: 8px;
-        padding: 0.6rem 1.2rem;
+    /* Metric cards: subtle border + shadow. Background and text colour inherit
+       from the active theme so values are always visible. */
+    [data-testid="stMetric"] {
+        background: rgba(128,128,128,0.05);
+        border: 1px solid rgba(128,128,128,0.20);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
-    /* ── Accent colour: deep teal (overrides Streamlit red) ────────────────── */
+    /* Teal accent for primary buttons and form-submit buttons */
     .stButton > button[kind="primary"],
-    .stButton > button[data-testid="stFormSubmitButton"] {
-        background-color: #0d9488;
-        border-color: #0d9488;
-        color: #ffffff;
-        transition: background-color 0.15s ease;
+    button[kind="secondary"][data-testid="stFormSubmitButton"],
+    button[kind="primary"][data-testid="stFormSubmitButton"] {
+        background-color: #0d9488 !important;
+        border-color: #0d9488 !important;
+        color: #ffffff !important;
     }
     .stButton > button[kind="primary"]:hover,
-    .stButton > button[data-testid="stFormSubmitButton"]:hover {
-        background-color: #0f766e;
-        border-color: #0f766e;
+    button[kind="secondary"][data-testid="stFormSubmitButton"]:hover,
+    button[kind="primary"][data-testid="stFormSubmitButton"]:hover {
+        background-color: #0f766e !important;
+        border-color: #0f766e !important;
+        color: #ffffff !important;
     }
 
-    /* Tab headers */
+    /* Tab labels */
     .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
         font-weight: 600;
         font-size: 0.95rem;
     }
 
-    /* Dataframe container */
+    /* Rounded dataframe corners */
     .stDataFrame {
         border-radius: 8px;
         overflow: hidden;
@@ -172,10 +171,10 @@ with tab_generate:
             "Rows to generate", min_value=100, max_value=10000, value=1000, step=100,
         )
     with col_btn:
-        st.markdown("<br>", unsafe_allow_html=True)  # vertical align
-        _ = st.button("Generate Data", type="primary", key="gen_btn")
+        st.markdown("<br>", unsafe_allow_html=True)
+        generate_clicked = st.button("Generate Data", type="primary", key="gen_btn")
 
-    if st.session_state.get("gen_btn"):
+    if generate_clicked:
         row_count_int = int(row_count)
         try:
             previous_rows = st.session_state.get("last_generated_rows")
@@ -195,20 +194,20 @@ with tab_generate:
             if result.stdout:
                 with st.expander("Engine output", expanded=False):
                     st.code(result.stdout, language="text")
-        except FileNotFoundError as exc:
+        except FileNotFoundError:
             output_path = generate_data(row_count_int, DATA_FILE)
             st.session_state["last_generated_rows"] = row_count_int
             st.session_state["last_generation_mtime"] = DATA_FILE.stat().st_mtime
             cached_training_result.clear()
-            st.warning(f"g++ not found — used Python fallback generator.")
-            st.success(f"✅  {row_count_int:,} rows generated → {DATA_FILE.name}")
+            st.warning("g++ not found — used Python fallback generator.")
+            st.success(f"✅  {row_count_int:,} rows generated → {output_path.name}")
         except subprocess.CalledProcessError as exc:
             st.error("Compilation or data generation failed.")
             details = "\n".join(part for part in [exc.stdout, exc.stderr] if part)
             if details:
                 st.code(details, language="text")
 
-    # Reload after potential generation
+    # Reload after potential generation so the preview reflects fresh data
     df = load_existing_data()
     automatic_training_result = get_training_result() if df is not None else None
 
@@ -244,8 +243,9 @@ with tab_generate:
 
         st.divider()
 
-        with st.expander("Summary statistics", expanded=True):
-            st.dataframe(df.describe(), width="stretch")
+        # Summary statistics — proper visible heading + dataframe
+        st.markdown("#### Summary statistics")
+        st.dataframe(df.describe(), width="stretch")
 
         # Charts side by side
         chart_col_a, chart_col_b = st.columns(2)
@@ -283,71 +283,84 @@ with tab_generate:
 # ======================= TAB 2 — Train Model ==============================
 with tab_train:
     st.subheader("Model Training")
+    st.caption(
+        "Train a RandomForestRegressor (n_estimators=200, max_depth=8) on the current dataset. "
+        "Click below to fit the model and view MAE, R², and feature importances."
+    )
 
-    _ = st.button("Train Model", type="primary", key="train_btn")
+    train_clicked = st.button("Train Model", type="primary", key="train_btn")
 
-    if st.session_state.get("train_btn"):
+    # Resolve the training result: from session_state (if previously trained),
+    # else from the auto-trained cache, else None.
+    training_result = st.session_state.get("last_training_result") or automatic_training_result
+
+    if train_clicked:
         if df is None:
             st.error("No dataset found. Generate data before training the model.")
         else:
             with st.spinner("Training RandomForestRegressor …"):
                 training_result = automatic_training_result or get_training_result()
-
             if training_result is not None:
-                metric_a, metric_b = st.columns(2)
-                metric_a.metric("Mean Absolute Error", f"{training_result['mae']:.2f} Lakhs")
-                metric_b.metric("R2 Score", f"{training_result['r2']:.4f}")
+                st.session_state["last_training_result"] = training_result
+                st.success("✅  Model trained successfully.")
 
-                st.divider()
+    if training_result is not None and df is not None:
+        metric_a, metric_b = st.columns(2)
+        with metric_a:
+            st.metric("Mean Absolute Error", f"{training_result['mae']:.2f} Lakhs")
+        with metric_b:
+            st.metric("R2 Score", f"{training_result['r2']:.4f}")
 
-                # Feature importances + predicted-vs-actual side by side
-                chart_left, chart_right = st.columns(2)
+        st.divider()
 
-                with chart_left:
-                    importances_df = pd.DataFrame(
-                        training_result["feature_importances"],
-                        columns=["feature", "importance"],
-                    )
-                    importance_chart = px.bar(
-                        importances_df,
-                        x="feature",
-                        y="importance",
-                        title="Feature Importances",
-                        labels={"feature": "Feature", "importance": "Importance"},
-                    )
-                    st.plotly_chart(importance_chart)
+        # Feature importances + predicted-vs-actual side by side
+        chart_left, chart_right = st.columns(2)
 
-                with chart_right:
-                    actual = training_result["y_test"].reset_index(drop=True)
-                    predicted = pd.Series(training_result["predictions"], name="predicted_price_lakhs")
-                    prediction_df = pd.DataFrame(
-                        {
-                            "actual_price_lakhs": actual,
-                            "predicted_price_lakhs": predicted,
-                        }
-                    )
-                    min_price = min(prediction_df.min())
-                    max_price = max(prediction_df.max())
-                    predicted_chart = px.scatter(
-                        prediction_df,
-                        x="actual_price_lakhs",
-                        y="predicted_price_lakhs",
-                        title="Predicted vs Actual Price",
-                        labels={
-                            "actual_price_lakhs": "Actual Price (Lakhs)",
-                            "predicted_price_lakhs": "Predicted Price (Lakhs)",
-                        },
-                    )
-                    predicted_chart.add_trace(
-                        go.Scatter(
-                            x=[min_price, max_price],
-                            y=[min_price, max_price],
-                            mode="lines",
-                            name="y = x",
-                            line={"dash": "dash", "color": "red"},
-                        )
-                    )
-                    st.plotly_chart(predicted_chart)
+        with chart_left:
+            importances_df = pd.DataFrame(
+                training_result["feature_importances"],
+                columns=["feature", "importance"],
+            )
+            importance_chart = px.bar(
+                importances_df,
+                x="feature",
+                y="importance",
+                title="Feature Importances",
+                labels={"feature": "Feature", "importance": "Importance"},
+            )
+            st.plotly_chart(importance_chart)
+
+        with chart_right:
+            actual = training_result["y_test"].reset_index(drop=True)
+            predicted = pd.Series(training_result["predictions"], name="predicted_price_lakhs")
+            prediction_df = pd.DataFrame(
+                {
+                    "actual_price_lakhs": actual,
+                    "predicted_price_lakhs": predicted,
+                }
+            )
+            min_price = min(prediction_df.min())
+            max_price = max(prediction_df.max())
+            predicted_chart = px.scatter(
+                prediction_df,
+                x="actual_price_lakhs",
+                y="predicted_price_lakhs",
+                title="Predicted vs Actual Price",
+                labels={
+                    "actual_price_lakhs": "Actual Price (Lakhs)",
+                    "predicted_price_lakhs": "Predicted Price (Lakhs)",
+                },
+            )
+            predicted_chart.add_trace(
+                go.Scatter(
+                    x=[min_price, max_price],
+                    y=[min_price, max_price],
+                    mode="lines",
+                    name="y = x",
+                    line={"dash": "dash", "color": "red"},
+                )
+            )
+            st.plotly_chart(predicted_chart)
 
     st.divider()
     st.info(METRIC_CAPTION)
@@ -356,6 +369,10 @@ with tab_train:
 # ======================= TAB 3 — Predict Price ==============================
 with tab_predict:
     st.subheader("Manual Prediction")
+    st.caption(
+        "Adjust the property features below, then predict the price using the trained model. "
+        "Train the model first (in the Train Model tab) for the freshest prediction."
+    )
 
     with st.form("manual_prediction_form"):
         col_sliders_left, col_sliders_right = st.columns(2)
@@ -370,10 +387,11 @@ with tab_predict:
 
         submitted = st.form_submit_button("Predict Price")
 
+    training_result = st.session_state.get("last_training_result") or automatic_training_result
+
     if submitted:
-        training_result = automatic_training_result or get_training_result()
         if training_result is None:
-            st.error("No dataset found. Generate data before training the model.")
+            st.error("No trained model found. Train the model first in the Train Model tab.")
         else:
             sample = pd.DataFrame(
                 [
@@ -387,7 +405,15 @@ with tab_predict:
                 columns=FEATURES,
             )
             predicted_price = training_result["model"].predict(sample)[0]
-            st.metric("Predicted Price", f"{predicted_price:.2f} Lakhs")
+            st.session_state["last_predicted_price"] = predicted_price
+            st.success(f"✅  Predicted using RandomForestRegressor on the current dataset.")
+
+    # Show the prediction result persistently (won't vanish on rerun)
+    last_price = st.session_state.get("last_predicted_price")
+    if last_price is not None:
+        st.metric("Predicted Price", f"{last_price:.2f} Lakhs")
+    elif training_result is None:
+        st.info("Train the model first to enable price prediction.")
 
 
 # ---------------------------------------------------------------------------
