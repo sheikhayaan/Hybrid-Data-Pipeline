@@ -1,3 +1,13 @@
+---
+title: Hybrid Data Pipeline - Gurgaon Housing Price Predictor
+emoji: 🏠
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Hybrid Data Pipeline: Gurgaon Housing Price Predictor
 
 [![Build Check](https://github.com/sheikhayaan/Hybrid-Data-Pipeline/actions/workflows/build-check.yml/badge.svg)](https://github.com/sheikhayaan/Hybrid-Data-Pipeline/actions/workflows/build-check.yml)
@@ -111,3 +121,44 @@ These numbers are useful as a sanity check that ingestion, cleaning, model fitti
 - Add categorical features such as locality, floor, furnishing status, builder, and property type
 - Move generator constants and model parameters into config files instead of hardcoding them
 - Add unit tests around data generation bounds, cleaning rules, and pipeline behavior
+
+## Deployment on Hugging Face Spaces
+
+This project ships as a Docker image and is configured to deploy to
+[Hugging Face Spaces](https://huggingface.co/spaces) using the Docker SDK.
+The app listens on port 7860 (the HF Spaces default) via the Dockerfile `CMD`.
+
+### One-time setup (manual, on huggingface.co)
+
+1. Create a new Space at **https://huggingface.co/new-space**
+   - **Space name:** `hybrid-data-pipeline` (or similar)
+   - **SDK:** Docker
+   - **Hardware:** CPU basic (free)
+2. Hugging Face will create a new, empty git repo for the Space at
+   `https://huggingface.co/spaces/<your-hf-username>/hybrid-data-pipeline`.
+
+### Push this code to the Space
+
+Hugging Face Spaces are their own git repos, separate from GitHub, but they
+can be kept in sync. From the root of this project:
+
+```bash
+# Add the Space as a second remote (replace <your-hf-username>)
+git remote add space https://huggingface.co/spaces/<your-hf-username>/hybrid-data-pipeline
+
+# Push the main branch to the Space remote
+git push space main
+```
+
+The Space will automatically build the `Dockerfile` and deploy. Build logs are
+visible in the Space's **Logs** tab on huggingface.co.
+
+### Notes
+
+- `git push origin main` still pushes to GitHub; `git push space main` pushes
+  to the HF Space. Run both to keep them in sync.
+- The first push will prompt for your HF credentials. Use your HF username and
+  a [access token with write permission](https://huggingface.co/settings/tokens)
+  as the password.
+- If you change the `app_port` in the README frontmatter, update the port in
+  the Dockerfile `CMD` and `EXPOSE` to match.

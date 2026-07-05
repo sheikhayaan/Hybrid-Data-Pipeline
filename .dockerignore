@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+
+# CI / metadata not needed in the image
+.github/
+
+# Python caches and virtualenvs
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Compiled binaries (rebuilt inside the image)
+data_engine
+data_engine.exe
+
+# CSV datasets — except the committed fallback that ships with the app.
+# This keeps the build context small while ensuring the app can still run
+# if the in-image compile step somehow fails.
+*.csv
+!synthetic_housing_data.csv
+
+# Local IDE / OS clutter
+.idea/
+.vscode/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Local Streamlit secrets
+.streamlit/secrets.toml
