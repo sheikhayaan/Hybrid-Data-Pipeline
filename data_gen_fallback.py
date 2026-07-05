@@ -39,6 +39,7 @@ def compute_price_lakhs(
 
 
 def generate_data(row_count: int = 1000, output_path: Path = OUTPUT_PATH) -> Path:
+    print(f"Row count set to {row_count}")
     rng = random.Random(42)
 
     with output_path.open("w", newline="") as csv_file:

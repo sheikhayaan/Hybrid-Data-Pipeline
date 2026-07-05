@@ -63,6 +63,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    std::cout << "Row count set to " << row_count << " (from "
+              << (argc > 1 ? "command-line argument" : "default") << ")\n";
+
     std::mt19937 rng(42);
 
     std::uniform_int_distribution<int> sqft_dist(450, 3500);

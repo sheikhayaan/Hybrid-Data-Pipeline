@@ -44,8 +44,10 @@ def compile_data_engine() -> subprocess.CompletedProcess:
 
 
 def run_data_engine(row_count: int) -> subprocess.CompletedProcess:
+    cmd = [str(EXECUTABLE), str(row_count)]
+    st.info(f"Running: {' '.join(cmd)}")
     return subprocess.run(
-        [str(EXECUTABLE), str(row_count)],
+        cmd,
         cwd=PROJECT_DIR,
         capture_output=True,
         text=True,
@@ -59,7 +61,7 @@ def load_existing_data() -> pd.DataFrame | None:
     return pd.read_csv(DATA_FILE)
 
 
-@st.cache_resource
+@st.cache_data
 def cached_training_result(csv_mtime: float) -> dict:
     del csv_mtime
     data = load_and_clean_data(DATA_FILE)
@@ -94,6 +96,7 @@ if st.button("Generate Data", type="primary"):
             result = run_data_engine(row_count_int)
 
         st.session_state["last_generated_rows"] = row_count_int
+        st.session_state["last_generation_mtime"] = DATA_FILE.stat().st_mtime
         cached_training_result.clear()
         st.success(f"Generated {row_count_int} rows at {DATA_FILE}")
         if result.stdout:
@@ -101,6 +104,7 @@ if st.button("Generate Data", type="primary"):
     except FileNotFoundError as exc:
         output_path = generate_data(row_count_int, DATA_FILE)
         st.session_state["last_generated_rows"] = row_count_int
+        st.session_state["last_generation_mtime"] = DATA_FILE.stat().st_mtime
         cached_training_result.clear()
         st.warning(f"{exc} Used the Python fallback generator instead.")
         st.success(f"Generated {row_count_int} rows at {output_path}")
@@ -117,6 +121,18 @@ st.subheader("Generated Data Preview")
 if df is None:
     st.info("Generate data first, or place synthetic_housing_data.csv in the project folder.")
 else:
+    expected_rows = st.session_state.get("last_generated_rows")
+    actual_rows = len(df)
+
+    st.caption(f"**Rows in CSV: {actual_rows}**")
+
+    if expected_rows and actual_rows != expected_rows:
+        st.error(
+            f"Row count mismatch! Expected {expected_rows} rows from generation, "
+            f"but the CSV file contains {actual_rows} rows. "
+            "The file may be stale or was overwritten by another process."
+        )
+
     st.dataframe(df.head(20), use_container_width=True)
 
     st.write("Summary statistics")
