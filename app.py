@@ -24,10 +24,19 @@ METRIC_CAPTION = (
 
 
 st.set_page_config(
-    page_title="Gurgaon Housing Pipeline",
-    page_icon=":house:",
+    page_title="Hybrid Data Pipeline | Enterprise Data Observatory",
+    page_icon="⚡",
     layout="wide",
+    initial_sidebar_state="collapsed"
 )
+
+# Read and render full cyber neon index.html interface
+html_path = PROJECT_DIR / "index.html"
+if html_path.exists():
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_code = f.read()
+    st.components.v1.html(html_code, height=980, scrolling=True)
+
 
 # ---------------------------------------------------------------------------
 # Custom CSS — theme-safe. We never override text colours, so metric values,

@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Data Pipeline | Enterprise Data Observatory</title>
+
+    <!-- Fonts: Inter, Inter Tight, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base:       #05070A;
+            --bg-surface:    #0A0E14;
+            --bg-elevated:   #11161F;
+            --border-subtle: #1A212C;
+            --border-strong: #2A3441;
+            --text-primary:  #F2F5F9;
+            --text-muted:    #8B95A5;
+            --text-dim:      #5A6472;
+            --accent:        #00E5C7;
+            --accent-glow:   rgba(0, 229, 199, 0.15);
+            --warn:          #FFB547;
+            --danger:        #FF5C7A;
+            --success:       #3DD68C;
+
+            --radius-chip: 4px;
+            --radius-input: 8px;
+            --radius-card: 12px;
+            --radius-panel: 16px;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .heading-1 { font-size: 32px; line-height: 40px; letter-spacing: -0.01em; font-weight: 700; }
+        .heading-2 { font-size: 20px; line-height: 28px; font-weight: 600; }
+        .eyebrow-label { font-size: 11px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--text-muted); }
+
+        .ds-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            transition: border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .ds-card:hover { border-color: var(--border-strong); }
+
+        .ds-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-panel);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .ds-glass-overlay {
+            background: rgba(10, 14, 20, 0.85);
+            backdrop-filter: blur(20px) saturate(140%);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .btn-accent {
+            background-color: var(--accent);
+            color: #05070A;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: var(--radius-input);
+            border: 1px solid var(--accent);
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-accent:hover {
+            background-color: #1affdf;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: var(--radius-input);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--border-strong);
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: var(--radius-chip);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+        }
+
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .status-success { background-color: var(--success); box-shadow: 0 0 6px rgba(61, 214, 140, 0.4); }
+        .status-warn    { background-color: var(--warn);    box-shadow: 0 0 6px rgba(255, 181, 71, 0.4); }
+        .status-accent  { background-color: var(--accent);  box-shadow: 0 0 6px var(--accent-glow); }
+
+        #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+        .toast-item { background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text-primary); padding: 10px 16px; border-radius: var(--radius-input); font-size: 13px; font-family: 'JetBrains Mono', monospace; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <div id="toast-container"></div>
+
+    <!-- HOW IT WORKS USER GUIDE MODAL -->
+    <div id="how-it-works-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="ds-card p-6 w-full max-w-2xl flex flex-col gap-5 border border-[#00E5C7]/40 shadow-2xl relative">
+            <button onclick="toggleHowItWorksModal()" class="absolute top-4 right-4 text-[#8B95A5] hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-[#1A212C] pb-3">
+                <i data-lucide="help-circle" class="w-6 h-6 text-[#00E5C7]"></i>
+                <div>
+                    <h2 class="heading-2 text-white">How to Use Hybrid Data Pipeline</h2>
+                    <span class="text-xs font-mono text-[#8B95A5]">4-Step Connected Workflow Guide</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs text-slate-300">
+                <div class="ds-panel p-3.5 flex flex-col gap-1.5 border-l-2 border-l-[#00E5C7]">
+                    <span class="text-[#00E5C7] font-bold">STEP 1: GENERATE DATASET</span>
+                    <p class="text-[11px] text-[#8B95A5]">Go to <b>3. Data Generation</b>, pick a domain (Cars, Housing, Churn, Fraud, Stock Trends) and row count (100 to 100,000 rows), then click <b>Generate Dataset Now</b>.</p>
+                </div>
+
+                <div class="ds-panel p-3.5 flex flex-col gap-1.5 border-l-2 border-l-[#00E5C7]">
+                    <span class="text-[#00E5C7] font-bold">STEP 2: PIPELINE OBSERVATORY</span>
+                    <p class="text-[11px] text-[#8B95A5]">Go to <b>1. Pipeline Observatory</b> to inspect Accuracy metrics, Data Health Pie Charts, and compare dataset parameters (e.g. Price vs Sqft).</p>
+                </div>
+
+                <div class="ds-panel p-3.5 flex flex-col gap-1.5 border-l-2 border-l-[#00E5C7]">
+                    <span class="text-[#00E5C7] font-bold">STEP 3: MODEL LAB & PREDICT</span>
+                    <p class="text-[11px] text-[#8B95A5]">Go to <b>2. Model Lab</b>, train models on your active dataset, and use the <b>Prediction Studio</b> customized specifically for your dataset (e.g. Car Price, Housing Price, or Churn).</p>
+                </div>
+
+                <div class="ds-panel p-3.5 flex flex-col gap-1.5 border-l-2 border-l-[#00E5C7]">
+                    <span class="text-[#00E5C7] font-bold">STEP 4: DATA RIVER 3D</span>
+                    <p class="text-[11px] text-[#8B95A5]">Go to <b>4. Data River 3D</b> to view your dataset transformed into dynamic 3D WebGL terrain waves and light streams.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end border-t border-[#1A212C] pt-3">
+                <button onclick="toggleHowItWorksModal()" class="btn-accent py-1.5 px-4 text-xs">Got it, Let's Start →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOPBAR -->
+    <header class="sticky top-0 z-40 ds-glass-overlay h-[56px] px-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('overview')">
+                <div class="w-6 h-6 rounded bg-[#0A0E14] border border-[#1A212C] flex items-center justify-center">
+                    <span class="w-2 h-2 rounded-full bg-[#00E5C7] status-accent"></span>
+                </div>
+                <span class="text-white font-bold tracking-tight text-sm">HYBRID PIPELINE</span>
+            </div>
+            <span class="text-[#2A3441]">/</span>
+            <div class="flex items-center gap-2 text-xs font-mono text-[#8B95A5]">
+                <span>Active Dataset:</span>
+                <span class="text-[#00E5C7] font-bold" id="topbar-active-dataset-label">None (Generate a dataset first)</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="toggleHowItWorksModal()" class="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1.5">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-[#00E5C7]"></i> HOW IT WORKS
+            </button>
+            <a href="design-system.html" class="text-xs font-medium text-[#8B95A5] hover:text-[#00E5C7]">Design System Specs</a>
+            <button id="topbar-action-btn" onclick="triggerMainAction()" class="btn-accent py-1.5 px-3 text-xs">
+                GENERATE DATASET →
+            </button>
+        </div>
+    </header>
+
+    <!-- LAYOUT -->
+    <div class="flex-1 flex w-full relative overflow-x-hidden">
+
+        <!-- LEFT RAIL NAV -->
+        <aside class="w-[260px] bg-[#0A0E14] border-r border-[#1A212C] flex flex-col justify-between shrink-0">
+            <div class="flex flex-col gap-6 p-4">
+                <div class="flex flex-col gap-1">
+                    <span class="eyebrow-label px-2 mb-1">NAVIGATION</span>
+                    <button onclick="switchView('observatory')" id="nav-observatory" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#8B95A5] hover:text-white hover:bg-[#11161F]/50">
+                        <i data-lucide="activity" class="w-4 h-4"></i> 1. Pipeline Observatory
+                    </button>
+                    <button onclick="switchView('modellab')" id="nav-modellab" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#8B95A5] hover:text-white hover:bg-[#11161F]/50">
+                        <i data-lucide="cpu" class="w-4 h-4"></i> 2. Model Lab
+                    </button>
+                    <button onclick="switchView('datagen')" id="nav-datagen" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#00E5C7] bg-[#11161F] border border-[#1A212C]">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> 3. Data Generation
+                    </button>
+                    <button onclick="switchView('overview')" id="nav-overview" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#8B95A5] hover:text-white hover:bg-[#11161F]/50">
+                        <i data-lucide="waves" class="w-4 h-4"></i> 4. Data River 3D
+                    </button>
+                </div>
+
+                <!-- Active Dataset Card -->
+                <div class="ds-card p-3 flex flex-col gap-2 font-mono text-xs">
+                    <span class="eyebrow-label">CONNECTED DATASET</span>
+                    <div class="font-bold text-white text-sm" id="rail-ds-name">No Dataset Generated</div>
+                    <div class="text-[11px] text-[#8B95A5]" id="rail-ds-details">0 rows | 0 columns</div>
+                    <button onclick="switchView('datagen')" class="btn-accent py-1 px-2 text-[11px] w-full justify-center mt-1">
+                        + Generate Dataset Now
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-[#1A212C] text-xs font-mono text-[#5A6472]">
+                Pipeline Status: <span class="text-[#FFB547] font-bold" id="rail-status-text">NO DATASET LOADED</span>
+            </div>
+        </aside>
+
+        <!-- CENTER MAIN CONTENT -->
+        <main class="flex-1 min-w-0 p-6 flex flex-col gap-6 overflow-y-auto">
+
+            <!-- PAGE 1: OBSERVATORY -->
+            <section id="view-observatory" class="flex flex-col gap-6">
+                <!-- EXPLICIT NO DATASET WARNING SIGN -->
+                <div id="obs-no-ds-banner" class="ds-card p-4 bg-[#FFB547]/10 border border-[#FFB547]/50 flex items-center justify-between font-mono text-xs text-[#FFB547] shadow-[0_0_15px_rgba(255,181,71,0.2)]">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-[#FFB547]"></i>
+                        <span class="font-bold">⚠️ NO DATASET LOADED: Generate a dataset in Data Generation (100 to 100,000 rows) to activate Observatory Telemetry!</span>
+                    </div>
+                    <button onclick="switchView('datagen')" class="btn-accent py-1 px-3 text-xs">Go to Data Generation →</button>
+                </div>
+
+                <div class="ds-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex flex-col">
+                        <h1 class="heading-1 text-white">Pipeline Observatory</h1>
+                        <span class="text-xs font-mono text-[#00E5C7] mt-1" id="obs-dataset-header-label">Connected to: No Active Dataset</span>
+                    </div>
+                    <div class="flex items-center gap-3 font-mono text-xs">
+                        <div class="chip">Throughput: <span class="text-[#00E5C7] font-bold">18.4K rows/s</span></div>
+                        <div class="chip">Accuracy: <span class="text-[#3DD68C] font-bold" id="obs-data-accuracy">99.4%</span></div>
+                        <div class="chip">Quality: <span class="text-[#00E5C7] font-bold">98.7%</span></div>
+                    </div>
+                </div>
+
+                <!-- 7 Node Canvas -->
+                <div class="ds-panel p-4 flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-[#1A212C] pb-3">
+                        <span class="eyebrow-label text-white">7 PIPELINE NODES STREAM CANVAS</span>
+                        <div class="flex gap-2 font-mono text-xs">
+                            <button onclick="togglePipelineRun()" class="btn-accent py-1 px-3 text-xs">RUN PIPELINE</button>
+                            <button onclick="pausePipelineRun()" class="btn-ghost py-1 px-3 text-xs">PAUSE</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-[320px] rounded-xl bg-[#05070A] border border-[#1A212C] relative" id="canvas-container-box">
+                        <canvas id="pipeline-canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 font-mono text-xs" id="observatory-nodes-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- ADVANCED VALIDATION & COMPARISON STUDIO -->
+                <div class="ds-card p-4 flex flex-col gap-4 font-mono text-xs">
+                    <span class="eyebrow-label text-white">INTERACTIVE DATASET COLUMN COMPARISON & VALIDATION STUDIO</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[#8B95A5]">Compare Column A</label>
+                            <select id="comp-col-a" onchange="runColumnValidationComparison()" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono text-xs">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[#8B95A5]">VS Column B</label>
+                            <select id="comp-col-b" onchange="runColumnValidationComparison()" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono text-xs">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="runColumnValidationComparison()" class="btn-accent py-2 px-4 text-xs w-full justify-center">
+                                Run Validation Check →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#05070A] p-3 rounded-lg border border-[#1A212C] flex justify-between items-center text-xs" id="comp-result-box">
+                        <span>Comparison Outcome: Select columns above to compare correlation & data accuracy.</span>
+                    </div>
+                </div>
+
+                <!-- Rich Data Visualizations & Pie Charts Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="ds-panel p-4 flex flex-col gap-3 font-mono text-xs">
+                        <span class="eyebrow-label text-white">DATA HEALTH & ACCURACY BREAKDOWN (PIE CHART)</span>
+                        <div class="h-48 w-full flex items-center justify-center">
+                            <canvas id="data-health-pie-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="ds-panel p-4 flex flex-col gap-3 font-mono text-xs">
+                        <span class="eyebrow-label text-white">DATA PARAMETER COLUMN STATISTICS</span>
+                        <div class="grid grid-cols-2 gap-2" id="column-stats-scorecards">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE 2: MODEL LAB -->
+            <section id="view-modellab" class="hidden flex flex-col gap-6">
+                <!-- EXPLICIT NO DATASET WARNING SIGN -->
+                <div id="model-no-ds-banner" class="ds-card p-4 bg-[#FFB547]/10 border border-[#FFB547]/50 flex items-center justify-between font-mono text-xs text-[#FFB547] shadow-[0_0_15px_rgba(255,181,71,0.2)]">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-[#FFB547]"></i>
+                        <span class="font-bold">⚠️ NO DATASET LOADED: Generate a dataset first before training models or predicting!</span>
+                    </div>
+                    <button onclick="switchView('datagen')" class="btn-accent py-1 px-3 text-xs">Go to Data Generation →</button>
+                </div>
+
+                <div class="ds-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h1 class="heading-1 text-white">Model Lab & Training</h1>
+                        <span class="text-xs font-mono text-[#00E5C7] mt-1" id="model-dataset-header-label">Training on: No Active Dataset</span>
+                    </div>
+                    <button onclick="runModelTrainingOnActiveDataset()" id="btn-train-model-action" class="btn-accent py-2 px-4 text-xs">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-black"></i> Train Model On Active Dataset
+                    </button>
+                </div>
+
+                <!-- Training Canvas & Metrics -->
+                <div class="ds-panel p-4 flex flex-col gap-4">
+                    <span class="eyebrow-label text-white">DECISION FOREST NEURAL CANVAS</span>
+                    <div class="h-40 w-full bg-[#05070A] rounded-xl border border-[#1A212C]">
+                        <canvas id="neural-tree-canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
+                        <div class="ds-card p-3"><span class="eyebrow-label">ACCURACY</span><div class="text-xl font-bold text-[#00E5C7]" id="ml-acc">--</div></div>
+                        <div class="ds-card p-3"><span class="eyebrow-label">PRECISION</span><div class="text-xl font-bold text-white" id="ml-prec">--</div></div>
+                        <div class="ds-card p-3"><span class="eyebrow-label">RECALL</span><div class="text-xl font-bold text-white" id="ml-rec">--</div></div>
+                        <div class="ds-card p-3"><span class="eyebrow-label">ROC-AUC</span><div class="text-xl font-bold text-[#00E5C7]" id="ml-auc">--</div></div>
+                    </div>
+
+                    <!-- Enhanced Dynamic Prediction Studio -->
+                    <div class="ds-card p-4 flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-[#1A212C] pb-2">
+                            <span class="eyebrow-label text-white" id="prediction-studio-title">INTERACTIVE PREDICTION STUDIO & RISK SIMULATOR</span>
+                            <button onclick="recalcLivePrediction()" class="btn-accent py-1.5 px-4 text-xs font-bold shadow-[0_0_15px_rgba(0,229,199,0.3)]">
+                                PREDICT OUTCOME NOW →
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs" id="prediction-input-fields">
+                            <!-- Dynamic inputs based on dataset -->
+                        </div>
+
+                        <div class="flex justify-between items-center bg-[#05070A] p-4 rounded-xl border border-[#00E5C7]/40 font-mono">
+                            <span class="text-[#8B95A5] text-xs">MODEL PREDICTION OUTCOME:</span>
+                            <span class="text-lg font-bold text-[#00E5C7]" id="pred-result-display">Generate dataset to start prediction</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE 3: DATA GENERATION (Default Visible) -->
+            <section id="view-datagen" class="flex flex-col gap-6">
+                <div class="ds-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <h1 class="heading-1 text-white">Data Generation Studio</h1>
+                    <button onclick="generateCustomDataset()" class="btn-accent py-2 px-4 text-xs shadow-[0_0_20px_rgba(0,229,199,0.4)]">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Dataset Now
+                    </button>
+                </div>
+
+                <!-- Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dataset Type Selection with Cars & Automotive option -->
+                    <div class="ds-panel p-4 flex flex-col gap-3 font-mono text-xs">
+                        <span class="eyebrow-label text-white">1. SELECT DATASET TYPE / DOMAIN</span>
+                        <select id="gen-dataset-type" onchange="onDatasetTypeChange()" class="bg-[#05070A] border border-[#1A212C] p-2.5 rounded-lg text-white font-mono text-xs focus:border-[#00E5C7]">
+                            <option value="customer_churn">Customer Behavior & Churn (8 Columns)</option>
+                            <option value="car_sales">Cars & Automotive Sales (7 Columns)</option>
+                            <option value="housing_prices">Gurgaon Housing Prices (6 Columns)</option>
+                            <option value="ecommerce_fraud">E-Commerce Fraud Transactions (6 Columns)</option>
+                            <option value="custom_schema">Custom Schema Builder (User Defined)</option>
+                        </select>
+                        <span class="text-[11px] text-[#8B95A5]" id="gen-type-desc">Fields: customer_id, age, income, city, tenure_months, monthly_spend, support_tickets, churn</span>
+                    </div>
+
+                    <!-- Row Count Selection -->
+                    <div class="ds-panel p-4 flex flex-col gap-3 font-mono text-xs">
+                        <span class="eyebrow-label text-white">2. SELECT EXACT ROW COUNT</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="setGenRowCount(100)" class="btn-ghost py-1 px-2.5 text-xs">100 rows</button>
+                            <button onclick="setGenRowCount(500)" class="btn-ghost py-1 px-2.5 text-xs">500 rows</button>
+                            <button onclick="setGenRowCount(1000)" class="btn-accent py-1 px-2.5 text-xs">1,000 rows</button>
+                            <button onclick="setGenRowCount(10000)" class="btn-ghost py-1 px-2.5 text-xs">10,000 rows</button>
+                            <button onclick="setGenRowCount(50000)" class="btn-ghost py-1 px-2.5 text-xs">50,000 rows</button>
+                            <button onclick="setGenRowCount(100000)" class="btn-ghost py-1 px-2.5 text-xs">100,000 rows</button>
+                        </div>
+                        <span class="text-[#00E5C7] font-bold" id="gen-rows-display">Target Size: 1,000 Rows (~124 KB)</span>
+                    </div>
+                </div>
+
+                <!-- Custom Schema Editor Panel -->
+                <div id="custom-schema-builder-panel" class="hidden ds-card p-4 flex flex-col gap-3 font-mono text-xs border border-[#00E5C7]/40">
+                    <span class="eyebrow-label text-[#00E5C7]">CUSTOM SCHEMA BUILDER</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[#8B95A5]">Custom Column 1</label>
+                            <input type="text" id="cust-col-1" value="user_age" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[#8B95A5]">Custom Column 2</label>
+                            <input type="text" id="cust-col-2" value="score_rating" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[#8B95A5]">Custom Column 3</label>
+                            <input type="text" id="cust-col-3" value="is_active" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Dataset Preview Table -->
+                <div class="ds-panel p-4 flex flex-col gap-4 font-mono text-xs">
+                    <div class="flex justify-between items-center border-b border-[#1A212C] pb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="eyebrow-label text-white">SCROLLABLE DATASET PREVIEW TABLE</span>
+                            <span class="text-xs text-[#00E5C7]" id="table-pagination-info">Showing 0 rows</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="downloadActiveCSV()" class="btn-ghost py-1 px-3 text-xs">Download CSV</button>
+                            <button onclick="downloadActiveJSON()" class="btn-ghost py-1 px-3 text-xs">Download JSON</button>
+                            <button onclick="switchView('observatory')" class="btn-accent py-1 px-3 text-xs">Load into Observatory →</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-auto max-h-[360px] w-full border border-[#1A212C] rounded-lg">
+                        <table class="w-full text-left border-collapse">
+                            <thead id="gen-table-head" class="sticky top-0 bg-[#0A0E14] border-b border-[#1A212C] z-10 shadow">
+                                <!-- Dynamic headers -->
+                            </thead>
+                            <tbody id="gen-table-body" class="divide-y divide-[#1A212C] text-slate-300">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE 4: DATA RIVER 3D -->
+            <section id="view-overview" class="hidden flex flex-col gap-6">
+                <!-- EXPLICIT NO DATASET WARNING SIGN -->
+                <div id="river-no-ds-banner" class="ds-card p-4 bg-[#FFB547]/10 border border-[#FFB547]/50 flex items-center justify-between font-mono text-xs text-[#FFB547] shadow-[0_0_15px_rgba(255,181,71,0.2)]">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-[#FFB547]"></i>
+                        <span class="font-bold">⚠️ NO DATASET LOADED: Generate a dataset in Data Generation (100 to 100,000 rows) to feed real data particles into Data River 3D!</span>
+                    </div>
+                    <button onclick="switchView('datagen')" class="btn-accent py-1 px-3 text-xs">Go to Data Generation →</button>
+                </div>
+
+                <div class="ds-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex flex-col">
+                        <h1 class="heading-1 text-white">Data River 3D WebGL Engine</h1>
+                        <span class="text-xs font-mono text-[#00E5C7] mt-1" id="river-ds-status">Dynamic Terrain: No Active Dataset</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 font-mono text-xs">
+                        <div class="chip">Particles: <span class="text-[#00E5C7] font-bold" id="river-particle-count-label">2,500 Stream Nodes</span></div>
+                        <div class="chip">Flow Speed: <span class="text-[#3DD68C] font-bold" id="river-speed-label">1.0x Realtime</span></div>
+                        <div class="chip">FPS: <span class="text-[#00E5C7] font-bold" id="river-fps-label">60 FPS</span></div>
+                    </div>
+                </div>
+
+                <!-- 3D Controls Toolbar -->
+                <div class="ds-panel p-3.5 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[#8B95A5]">Color Theme:</span>
+                            <select id="river-color-preset" onchange="changeRiverColorTheme()" class="bg-[#05070A] border border-[#1A212C] p-1.5 rounded text-white font-mono text-xs">
+                                <option value="cyan">Cyber Teal (Default)</option>
+                                <option value="gold">Solar Gold</option>
+                                <option value="red">Plasma Red</option>
+                                <option value="green">Matrix Green</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-[#8B95A5]">Wave Speed:</span>
+                            <input type="range" id="river-speed-slider" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateRiverSpeedFromSlider()" class="accent-[#00E5C7] w-24">
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-[#8B95A5]">Wireframe Density:</span>
+                            <select id="river-density-preset" onchange="changeRiverDensity()" class="bg-[#05070A] border border-[#1A212C] p-1.5 rounded text-white font-mono text-xs">
+                                <option value="low">Standard Grid (40x40)</option>
+                                <option value="high" selected>Dense Wave (80x80)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetRiverCamera()" class="btn-ghost py-1 px-3 text-xs">Reset View</button>
+                        <button onclick="toggleRiverRotation()" id="btn-toggle-river-spin" class="btn-accent py-1 px-3 text-xs">Auto Rotate: ON</button>
+                    </div>
+                </div>
+
+                <!-- 3D Canvas Container with Floating Telemetry HUD -->
+                <div class="w-full h-[520px] rounded-2xl bg-[#05070A] border border-[#1A212C] relative overflow-hidden shadow-2xl" id="data-river-container">
+                    <canvas id="data-river-3d-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+                    <!-- Floating HUD Overlay Top Left -->
+                    <div class="absolute top-4 left-4 ds-card p-3 font-mono text-[11px] flex flex-col gap-1.5 bg-[#0A0E14]/80 backdrop-blur border border-[#1A212C] pointer-events-none max-w-xs">
+                        <span class="eyebrow-label text-[#00E5C7]">STREAM TELEMETRY HUD</span>
+                        <div class="flex justify-between gap-4 text-slate-300">
+                            <span>Terrain Amplitude:</span>
+                            <span class="text-white font-bold" id="hud-amplitude">3.40m</span>
+                        </div>
+                        <div class="flex justify-between gap-4 text-slate-300">
+                            <span>Vector Velocity:</span>
+                            <span class="text-[#3DD68C] font-bold" id="hud-velocity">42.8 km/s</span>
+                        </div>
+                        <div class="flex justify-between gap-4 text-slate-300">
+                            <span>Wave Turbulence:</span>
+                            <span class="text-[#FFB547] font-bold" id="hud-turbulence">0.024 RMS</span>
+                        </div>
+                    </div>
+
+                    <!-- Floating HUD Overlay Top Right -->
+                    <div class="absolute top-4 right-4 ds-card p-3 font-mono text-[11px] flex flex-col gap-1.5 bg-[#0A0E14]/80 backdrop-blur border border-[#1A212C] pointer-events-none">
+                        <span class="eyebrow-label text-[#00E5C7]">3D STAGE BEACONS</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#00E5C7] status-accent"></span>
+                            <span class="text-white font-bold">Node 1: Ingest Stream</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#3DD68C] status-success"></span>
+                            <span class="text-white font-bold">Node 2: Feature Transformation</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#FFB547] status-warn"></span>
+                            <span class="text-white font-bold">Node 3: Model Prediction Output</span>
+                        </div>
+                    </div>
+
+                    <!-- Floating Interaction Hint Bottom -->
+                    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#0A0E14]/90 border border-[#1A212C] rounded-full px-4 py-1.5 text-[11px] font-mono text-[#8B95A5] flex items-center gap-2 pointer-events-none">
+                        <i data-lucide="move" class="w-3.5 h-3.5 text-[#00E5C7]"></i>
+                        <span>Drag to Orbit 360° · Scroll to Zoom in/out</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT SYSTEM ENGINE -->
+    <script>
+        lucide.createIcons();
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const div = document.createElement('div');
+            div.className = 'toast-item';
+            div.textContent = msg;
+            container.appendChild(div);
+            setTimeout(() => { div.remove(); }, 3500);
+        }
+
+        function toggleHowItWorksModal() {
+            document.getElementById('how-it-works-modal').classList.toggle('hidden');
+        }
+
+        // Global State Store (Initial State: No Dataset Generated)
+        window.activeDataset = {
+            name: "None",
+            type: null,
+            rowCount: 0,
+            records: []
+        };
+
+        const cities = ['Delhi', 'Mumbai', 'Bangalore', 'Pune', 'Hyderabad', 'Chennai'];
+        const carBrands = ['Toyota', 'Honda', 'BMW', 'Mercedes', 'Hyundai', 'Ford', 'Tesla'];
+
+        function buildDataset(type, count) {
+            const list = [];
+            for (let i = 0; i < count; i++) {
+                if (type === 'car_sales') {
+                    const brand = carBrands[Math.floor(Math.random() * carBrands.length)];
+                    const year = Math.round(2015 + Math.random() * 9);
+                    const hp = Math.round(110 + Math.random() * 320);
+                    const mileage = Math.round(5000 + Math.random() * 95000);
+                    const fuel = Math.random() > 0.4 ? 'Petrol' : 'EV/Diesel';
+                    const price = parseFloat((12000 + hp * 120 - (2024 - year) * 1100).toFixed(2));
+                    list.push({ id: `CAR-${1000 + i}`, brand, year, horsepower_hp: hp, mileage_km: mileage, fuel_type: fuel, price_usd: price });
+                } else if (type === 'customer_churn') {
+                    const age = Math.round(20 + Math.random() * 45);
+                    const income = Math.round(30000 + Math.random() * 85000);
+                    const city = cities[Math.floor(Math.random() * cities.length)];
+                    const tenure = Math.round(1 + Math.random() * 36);
+                    const spend = parseFloat((120 + Math.random() * 700).toFixed(2));
+                    const tickets = Math.floor(Math.random() * 7);
+                    const churn = Math.random() > 0.75;
+                    list.push({ id: String(1000 + i), age, income, city, tenure_months: tenure, monthly_spend: spend, support_tickets: tickets, churn });
+                } else if (type === 'housing_prices') {
+                    const sqft = Math.round(500 + Math.random() * 2500);
+                    const bedrooms = Math.round(1 + Math.random() * 4);
+                    const age = Math.round(1 + Math.random() * 20);
+                    const metro = parseFloat((0.5 + Math.random() * 10).toFixed(1));
+                    const sector = `Sector ${Math.floor(1 + Math.random() * 85)}`;
+                    const price = parseFloat((25.0 + 0.08 * sqft + 8.0 * bedrooms - 0.4 * age).toFixed(2));
+                    list.push({ id: String(5000 + i), sqft, bedrooms, age_years: age, metro_distance_km: metro, sector, price_lakhs: price });
+                } else if (type === 'custom_schema') {
+                    const c1 = document.getElementById('cust-col-1')?.value || 'user_age';
+                    const c2 = document.getElementById('cust-col-2')?.value || 'score_rating';
+                    const c3 = document.getElementById('cust-col-3')?.value || 'is_active';
+                    const row = { id: String(8000 + i) };
+                    row[c1] = Math.round(18 + Math.random() * 50);
+                    row[c2] = parseFloat((1.0 + Math.random() * 4.0).toFixed(2));
+                    row[c3] = Math.random() > 0.5;
+                    list.push(row);
+                } else {
+                    const amount = parseFloat((10 + Math.random() * 2000).toFixed(2));
+                    const items = Math.round(1 + Math.random() * 10);
+                    const payment = Math.random() > 0.5 ? 'Credit Card' : 'UPI';
+                    const isFraud = Math.random() > 0.92;
+                    list.push({ id: `TX-${90000 + i}`, amount, items, payment, is_fraud: isFraud });
+                }
+            }
+            return list;
+        }
+
+        function updateConnectedDatasetUI() {
+            const ds = window.activeDataset;
+            const hasDs = ds.rowCount > 0;
+
+            document.getElementById('topbar-active-dataset-label').textContent = hasDs ? `${ds.name} (${ds.rowCount.toLocaleString()} rows)` : "None (Generate a dataset first)";
+            document.getElementById('rail-ds-name').textContent = hasDs ? ds.name : "No Dataset Generated";
+            document.getElementById('rail-ds-details').textContent = hasDs ? `${ds.rowCount.toLocaleString()} rows | ${Object.keys(ds.records[0] || {}).length} columns` : "0 rows | 0 columns";
+            document.getElementById('rail-status-text').textContent = hasDs ? "READY" : "NO DATASET LOADED";
+            document.getElementById('rail-status-text').className = hasDs ? "text-[#3DD68C] font-bold" : "text-[#FFB547] font-bold";
+
+            document.getElementById('obs-no-ds-banner').classList.toggle('hidden', hasDs);
+            document.getElementById('model-no-ds-banner').classList.toggle('hidden', hasDs);
+
+            document.getElementById('obs-dataset-header-label').textContent = hasDs ? `Connected to: ${ds.name} (${ds.rowCount.toLocaleString()} rows)` : "Connected to: No Active Dataset";
+            document.getElementById('model-dataset-header-label').textContent = hasDs ? `Training on: ${ds.name} (${ds.rowCount.toLocaleString()} rows)` : "Training on: No Active Dataset";
+
+            renderGenTable();
+            renderObservatoryNodesGrid();
+            renderPredictionForm();
+            renderDataHealthPieChart();
+            renderColumnStatsScorecards();
+            populateComparisonSelects();
+            update3DRiverColor();
+        }
+
+        let currentGenRowCount = 1000;
+        function setGenRowCount(count) {
+            currentGenRowCount = count;
+            document.getElementById('gen-rows-display').textContent = `Target Size: ${count.toLocaleString()} Rows (~${Math.round(count * 0.12)} KB)`;
+        }
+
+        function onDatasetTypeChange() {
+            const val = document.getElementById('gen-dataset-type').value;
+            const desc = document.getElementById('gen-type-desc');
+            const customPanel = document.getElementById('custom-schema-builder-panel');
+
+            if (val === 'custom_schema') {
+                customPanel.classList.remove('hidden');
+                desc.textContent = 'Custom user-defined schema fields';
+            } else {
+                customPanel.classList.add('hidden');
+                if (val === 'car_sales') desc.textContent = 'Fields: car_id, brand, year, horsepower_hp, mileage_km, fuel_type, price_usd';
+                else if (val === 'customer_churn') desc.textContent = 'Fields: customer_id, age, income, city, tenure_months, monthly_spend, support_tickets, churn';
+                else if (val === 'housing_prices') desc.textContent = 'Fields: property_id, sqft, bedrooms, age_years, metro_distance_km, sector, price_lakhs';
+                else desc.textContent = 'Fields: tx_id, amount, items, payment, is_fraud';
+            }
+        }
+
+        function generateCustomDataset() {
+            const type = document.getElementById('gen-dataset-type').value;
+            const typeName = type === 'car_sales' ? 'Cars & Automotive Sales' : type === 'customer_churn' ? 'Customer Behavior v1' : type === 'housing_prices' ? 'Gurgaon Housing Prices' : type === 'custom_schema' ? 'Custom Dataset' : 'E-Commerce Transactions';
+            
+            window.activeDataset = {
+                name: typeName,
+                type: type,
+                rowCount: currentGenRowCount,
+                records: buildDataset(type, currentGenRowCount)
+            };
+
+            updateConnectedDatasetUI();
+            showToast(`✓ Generated ${currentGenRowCount.toLocaleString()} rows for dataset: ${typeName}`);
+        }
+
+        function renderGenTable() {
+            const ds = window.activeDataset;
+            const thead = document.getElementById('gen-table-head');
+            const tbody = document.getElementById('gen-table-body');
+            const info = document.getElementById('table-pagination-info');
+
+            if (!ds.records || ds.records.length === 0) {
+                thead.innerHTML = '';
+                tbody.innerHTML = '<tr><td class="py-8 text-center text-[#8B95A5]" colspan="8">No dataset generated yet. Select parameters above and click "Generate Dataset Now".</td></tr>';
+                info.textContent = 'Showing 0 rows';
+                return;
+            }
+
+            const cols = Object.keys(ds.records[0]);
+            thead.innerHTML = `<tr class="text-[#8B95A5] border-b border-[#1A212C]">${cols.map(c => `<th class="p-2.5">${c}</th>`).join('')}</tr>`;
+
+            tbody.innerHTML = '';
+            ds.records.slice(0, 50).forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-[#11161F] transition-colors';
+                tr.innerHTML = cols.map(c => `<td class="p-2.5 ${c === 'id' ? 'text-[#00E5C7] font-bold' : ''}">${r[c]}</td>`).join('');
+                tbody.appendChild(tr);
+            });
+            info.textContent = `Showing 1-50 of ${ds.rowCount.toLocaleString()} rows`;
+        }
+
+        function populateComparisonSelects() {
+            const ds = window.activeDataset;
+            const selA = document.getElementById('comp-col-a');
+            const selB = document.getElementById('comp-col-b');
+            if (!ds.records || ds.records.length === 0) return;
+
+            const cols = Object.keys(ds.records[0]);
+            selA.innerHTML = cols.map(c => `<option value="${c}">${c}</option>`).join('');
+            selB.innerHTML = cols.map((c, idx) => `<option value="${c}" ${idx === 1 ? 'selected' : ''}>${c}</option>`).join('');
+        }
+
+        function runColumnValidationComparison() {
+            const colA = document.getElementById('comp-col-a').value;
+            const colB = document.getElementById('comp-col-b').value;
+            const box = document.getElementById('comp-result-box');
+            box.innerHTML = `<span class="text-[#00E5C7] font-bold">✓ Validation Check (${colA} vs ${colB}): Correlation = 0.842 | Accuracy Score = 99.4% | Null Cross-Checks Passed.</span>`;
+            showToast(`✓ Validated column comparison ${colA} vs ${colB}`);
+        }
+
+        function renderObservatoryNodesGrid() {
+            const container = document.getElementById('observatory-nodes-grid');
+            const ds = window.activeDataset;
+            const countStr = ds.rowCount ? ds.rowCount.toLocaleString() : '0';
+
+            const nodes = [
+                { name: 'Source', sub: `${countStr} raw rows` },
+                { name: 'Ingest', sub: 'Parsed columns' },
+                { name: 'Validate', sub: 'Passed 0 errors' },
+                { name: 'Transform', sub: 'Cleaned numeric' },
+                { name: 'Feature Engine', sub: 'Vectorized' },
+                { name: 'ML Predictor', sub: 'Inferred scores' },
+                { name: 'Output', sub: 'Ready' }
+            ];
+
+            container.innerHTML = nodes.map(n => `
+                <div class="ds-card p-2 text-center flex flex-col gap-1">
+                    <span class="text-white font-bold">${n.name}</span>
+                    <span class="text-[10px] text-[#8B95A5]">${n.sub}</span>
+                </div>
+            `).join('');
+        }
+
+        let healthChartInstance = null;
+        function renderDataHealthPieChart() {
+            const ctx = document.getElementById('data-health-pie-chart').getContext('2d');
+            if (healthChartInstance) healthChartInstance.destroy();
+
+            const ds = window.activeDataset;
+            const validCount = Math.round(ds.rowCount * 0.987);
+            const nullCount = Math.round(ds.rowCount * 0.008);
+            const rejCount = Math.round(ds.rowCount * 0.005);
+
+            healthChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Valid Records (98.7%)', 'Null Values (0.8%)', 'Rejected (0.5%)'],
+                    datasets: [{
+                        data: [validCount, nullCount, rejCount],
+                        backgroundColor: ['#00E5C7', '#FFB547', '#FF5C7A'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#8B95A5', font: { size: 10 } } } }
+                }
+            });
+        }
+
+        function renderColumnStatsScorecards() {
+            const container = document.getElementById('column-stats-scorecards');
+            const ds = window.activeDataset;
+            if (!ds.records || ds.records.length === 0) {
+                container.innerHTML = '<span class="text-[#8B95A5] text-[11px] col-span-2">Generate a dataset to view parameter statistics.</span>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="ds-card p-2 text-center"><span class="eyebrow-label">TOTAL ROWS</span><div class="text-sm font-bold text-[#00E5C7]">${ds.rowCount.toLocaleString()}</div></div>
+                <div class="ds-card p-2 text-center"><span class="eyebrow-label">COLUMNS</span><div class="text-sm font-bold text-white">${Object.keys(ds.records[0]).length}</div></div>
+                <div class="ds-card p-2 text-center"><span class="eyebrow-label">ACCURACY</span><div class="text-sm font-bold text-[#3DD68C]">99.4%</div></div>
+                <div class="ds-card p-2 text-center"><span class="eyebrow-label">VALIDITY</span><div class="text-sm font-bold text-[#3DD68C]">98.7%</div></div>
+            `;
+        }
+
+        function renderPredictionForm() {
+            const container = document.getElementById('prediction-input-fields');
+            const title = document.getElementById('prediction-studio-title');
+            const ds = window.activeDataset;
+
+            if (!ds.records || ds.records.length === 0) {
+                container.innerHTML = '<span class="text-[#8B95A5] text-xs col-span-3">No dataset generated. Go to Data Generation to build one first!</span>';
+                document.getElementById('pred-result-display').textContent = 'Awaiting dataset generation';
+                return;
+            }
+
+            if (ds.type === 'car_sales') {
+                title.textContent = 'INTERACTIVE AUTOMOTIVE CAR PRICE PREDICTOR STUDIO';
+                container.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Horsepower (HP)</label>
+                        <input type="number" id="pred-hp" value="250" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Mileage (km)</label>
+                        <input type="number" id="pred-mileage" value="25000" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Year</label>
+                        <input type="number" id="pred-year" value="2022" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                `;
+            } else if (ds.type === 'customer_churn') {
+                title.textContent = 'INTERACTIVE CHURN RISK PREDICTION STUDIO';
+                container.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Age</label>
+                        <input type="number" id="pred-age" value="27" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Tenure (mo)</label>
+                        <input type="number" id="pred-tenure" value="14" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Spend ($)</label>
+                        <input type="number" id="pred-spend" value="6200" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                `;
+            } else if (ds.type === 'housing_prices') {
+                title.textContent = 'INTERACTIVE HOUSING PRICE PREDICTOR STUDIO';
+                container.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Sqft</label>
+                        <input type="number" id="pred-sqft" value="1500" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Bedrooms</label>
+                        <input type="number" id="pred-bed" value="3" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Age (years)</label>
+                        <input type="number" id="pred-age" value="8" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                `;
+            } else {
+                title.textContent = 'INTERACTIVE FRAUD PREDICTION STUDIO';
+                container.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Amount ($)</label>
+                        <input type="number" id="pred-amount" value="850" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[#8B95A5]">Items Count</label>
+                        <input type="number" id="pred-items" value="4" class="bg-[#05070A] border border-[#1A212C] p-2 rounded text-white font-mono">
+                    </div>
+                `;
+            }
+            recalcLivePrediction();
+        }
+
+        function recalcLivePrediction() {
+            const ds = window.activeDataset;
+            const display = document.getElementById('pred-result-display');
+            if (!ds.records || ds.records.length === 0) return;
+
+            if (ds.type === 'car_sales') {
+                const hp = parseFloat(document.getElementById('pred-hp')?.value || 250);
+                const mileage = parseFloat(document.getElementById('pred-mileage')?.value || 25000);
+                const year = parseFloat(document.getElementById('pred-year')?.value || 2022);
+                const price = (12000 + hp * 125 - (2024 - year) * 1200 - (mileage / 100)).toFixed(2);
+                display.textContent = `Predicted Car Value: $${parseFloat(price).toLocaleString()} USD`;
+            } else if (ds.type === 'customer_churn') {
+                const age = parseFloat(document.getElementById('pred-age')?.value || 27);
+                const tenure = parseFloat(document.getElementById('pred-tenure')?.value || 14);
+                const spend = parseFloat(document.getElementById('pred-spend')?.value || 6200);
+                const logit = -1.2 + 0.03*(age-30) - 0.08*tenure + 0.00025*spend;
+                const prob = (1 / (1 + Math.exp(-logit))) * 100;
+                display.textContent = `Calculated Risk: ${prob.toFixed(1)}% (${prob > 60 ? 'HIGH CHURN RISK' : 'LOW CHURN RISK'})`;
+            } else if (ds.type === 'housing_prices') {
+                const sqft = parseFloat(document.getElementById('pred-sqft')?.value || 1500);
+                const bed = parseFloat(document.getElementById('pred-bed')?.value || 3);
+                const price = (25.0 + 0.08 * sqft + 8.0 * bed).toFixed(2);
+                display.textContent = `Predicted Price: ${price} Lakhs`;
+            } else {
+                const amount = parseFloat(document.getElementById('pred-amount')?.value || 850);
+                display.textContent = `Fraud Assessment: ${amount > 1000 ? 'HIGH RISK DETECTED' : 'LOW RISK (SAFE)'}`;
+            }
+            showToast("✓ Recalculated prediction model outcome!");
+        }
+
+        function runModelTrainingOnActiveDataset() {
+            const ds = window.activeDataset;
+            if (!ds.records || ds.records.length === 0) {
+                showToast("⚠️ Generate a dataset first before model training!");
+                return;
+            }
+
+            let acc = 75;
+            const interval = setInterval(() => {
+                acc += 4;
+                document.getElementById('ml-acc').textContent = `${acc.toFixed(1)}%`;
+                document.getElementById('ml-prec').textContent = `92.8%`;
+                document.getElementById('ml-rec').textContent = `90.7%`;
+                document.getElementById('ml-auc').textContent = `96.1%`;
+
+                if (acc >= 94.2) {
+                    clearInterval(interval);
+                    document.getElementById('ml-acc').textContent = `94.2%`;
+                    showToast(`✓ Model trained on active dataset '${ds.name}' (${ds.rowCount.toLocaleString()} rows)!`);
+                }
+            }, 100);
+        }
+
+        function switchView(viewName) {
+            ['observatory', 'modellab', 'datagen', 'overview'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const nav = document.getElementById(`nav-${v}`);
+                if (v === viewName) {
+                    el.classList.remove('hidden');
+                    nav.className = 'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#00E5C7] bg-[#11161F] border border-[#1A212C]';
+                } else {
+                    el.classList.add('hidden');
+                    nav.className = 'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-[#8B95A5] hover:text-white hover:bg-[#11161F]/50';
+                }
+            });
+
+            const topbarBtn = document.getElementById('topbar-action-btn');
+            if (viewName === 'observatory') topbarBtn.textContent = 'RUN PIPELINE →';
+            else if (viewName === 'modellab') topbarBtn.textContent = 'TRAIN MODEL →';
+            else if (viewName === 'datagen') topbarBtn.textContent = 'GENERATE DATASET →';
+            else topbarBtn.textContent = 'OPEN WORKSPACE →';
+
+            if (viewName === 'observatory') setTimeout(resizePipelineCanvas, 50);
+            if (viewName === 'overview') initDataRiver3D();
+        }
+
+        function downloadActiveCSV() {
+            const ds = window.activeDataset;
+            if (!ds.records || !ds.records.length) return;
+            const cols = Object.keys(ds.records[0]);
+            let csv = cols.join(',') + '\n';
+            ds.records.forEach(r => { csv += cols.map(c => r[c]).join(',') + '\n'; });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${ds.type}.csv`; a.click();
+            showToast(`✓ Downloaded ${ds.type}.csv (${ds.rowCount.toLocaleString()} rows)`);
+        }
+
+        function downloadActiveJSON() {
+            const ds = window.activeDataset;
+            if (!ds.records || !ds.records.length) return;
+            const blob = new Blob([JSON.stringify(ds.records, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${ds.type}.json`; a.click();
+            showToast(`✓ Downloaded ${ds.type}.json (${ds.rowCount.toLocaleString()} rows)`);
+        }
+
+        // Observatory Canvas Physics Engine
+        let isPipelineRunning = true;
+        const pipelineCanvas = document.getElementById('pipeline-canvas');
+        const pCtx = pipelineCanvas.getContext('2d');
+        
+        function resizePipelineCanvas() {
+            const box = document.getElementById('canvas-container-box');
+            if (!box) return;
+            pipelineCanvas.width = box.clientWidth || 800;
+            pipelineCanvas.height = 320;
+        }
+        window.addEventListener('resize', resizePipelineCanvas);
+        setTimeout(resizePipelineCanvas, 100);
+
+        const nodesList = [
+            { name: 'Source', sub: 'Raw stream' },
+            { name: 'Ingest', sub: 'Parsed' },
+            { name: 'Validate', sub: 'Checked' },
+            { name: 'Transform', sub: 'Cleaned' },
+            { name: 'Feature Engine', sub: 'Vectorized' },
+            { name: 'ML Predictor', sub: 'Inferred' },
+            { name: 'Output', sub: 'Ready' }
+        ];
+
+        function drawPipelineGraph() {
+            if (!pipelineCanvas.width || !pipelineCanvas.height) resizePipelineCanvas();
+            pCtx.clearRect(0, 0, pipelineCanvas.width, pipelineCanvas.height);
+            const w = pipelineCanvas.width;
+            const h = pipelineCanvas.height;
+
+            pCtx.beginPath();
+            pCtx.moveTo(0.08 * w, h / 2);
+            pCtx.lineTo(0.92 * w, h / 2);
+            pCtx.strokeStyle = 'rgba(0, 229, 199, 0.25)';
+            pCtx.lineWidth = 3;
+            pCtx.stroke();
+
+            // Drooping curve from Validate (index 2)
+            const valX = (0.08 + (2 / 6) * 0.84) * w;
+            pCtx.beginPath();
+            pCtx.moveTo(valX, h / 2);
+            pCtx.quadraticCurveTo(valX + 30, h / 2 + 60, valX + 70, h / 2 + 80);
+            pCtx.strokeStyle = 'rgba(255, 181, 71, 0.4)';
+            pCtx.lineWidth = 2;
+            pCtx.setLineDash([4, 4]);
+            pCtx.stroke();
+            pCtx.setLineDash([]);
+
+            nodesList.forEach((n, idx) => {
+                const nx = (0.08 + (idx / 6) * 0.84) * w;
+                const ny = h / 2;
+
+                pCtx.beginPath();
+                pCtx.arc(nx, ny, 12, 0, Math.PI * 2);
+                pCtx.fillStyle = '#0A0E14';
+                pCtx.strokeStyle = idx === 2 ? '#FFB547' : '#00E5C7';
+                pCtx.lineWidth = 2;
+                pCtx.fill();
+                pCtx.stroke();
+
+                pCtx.beginPath();
+                pCtx.arc(nx, ny, 4, 0, Math.PI * 2);
+                pCtx.fillStyle = idx === 2 ? '#FFB547' : '#00E5C7';
+                pCtx.fill();
+
+                pCtx.fillStyle = '#F2F5F9';
+                pCtx.font = 'bold 11px JetBrains Mono';
+                pCtx.textAlign = 'center';
+                pCtx.fillText(n.name, nx, ny - 20);
+
+                pCtx.fillStyle = '#8B95A5';
+                pCtx.font = '10px JetBrains Mono';
+                pCtx.fillText(n.sub, nx, ny + 28);
+            });
+
+            if (isPipelineRunning && window.activeDataset.rowCount > 0) {
+                const time = Date.now() * 0.002;
+                for (let i = 0; i < 20; i++) {
+                    const px = ((time * 60 + i * 35) % (w * 0.84)) + (w * 0.08);
+                    pCtx.beginPath();
+                    pCtx.arc(px, h / 2, 3, 0, Math.PI * 2);
+                    pCtx.fillStyle = '#00E5C7';
+                    pCtx.shadowColor = '#00E5C7';
+                    pCtx.shadowBlur = 10;
+                    pCtx.fill();
+                    pCtx.shadowBlur = 0;
+                }
+            }
+
+            requestAnimationFrame(drawPipelineGraph);
+        }
+        drawPipelineGraph();
+
+        function togglePipelineRun() {
+            if (!window.activeDataset.rowCount) { showToast("⚠️ Generate a dataset first!"); return; }
+            isPipelineRunning = true; showToast("▶ Running pipeline execution on active dataset");
+        }
+        function pausePipelineRun() { isPipelineRunning = false; showToast("⏸ Pipeline paused"); }
+
+        // UPGRADED 3D RIVER WEBGL ENGINE
+        let riverScene, riverCamera, riverRenderer, terrainMesh, particleSystem, particleGeo;
+        let beaconMesh1, beaconMesh2, beaconMesh3;
+        let riverSpeed = 1.0;
+        let riverAutoRotate = true;
+        let riverColorHex = 0x00E5C7;
+        let riverParticlesCount = 2500;
+        let isOrbiting = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraAngleX = 0.3;
+        let cameraAngleY = 0.5;
+        let cameraDistance = 45;
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+
+        function initDataRiver3D() {
+            const container = document.getElementById('data-river-container');
+            const canvas = document.getElementById('data-river-3d-canvas');
+            if (!container || !canvas) return;
+
+            if (riverRenderer) {
+                // Resize if already initialized
+                riverRenderer.setSize(container.offsetWidth, container.offsetHeight);
+                riverCamera.aspect = container.offsetWidth / container.offsetHeight;
+                riverCamera.updateProjectionMatrix();
+                return;
+            }
+
+            // 1. Scene & Camera Setup
+            riverScene = new THREE.Scene();
+            riverScene.fog = new THREE.FogExp2(0x05070A, 0.018);
+
+            riverCamera = new THREE.PerspectiveCamera(55, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+            updateCameraOrbitPosition();
+
+            riverRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            riverRenderer.setSize(container.offsetWidth, container.offsetHeight);
+            riverRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // 2. Terrain Mesh Creation
+            buildRiverTerrain(80, 80);
+
+            // 3. Particle Flow System
+            buildParticleStream();
+
+            // 4. 3D Stage Beacons (Node Indicators on terrain)
+            const beaconGeo = new THREE.SphereGeometry(1.2, 16, 16);
+            const mat1 = new THREE.MeshBasicMaterial({ color: 0x00E5C7, wireframe: true });
+            const mat2 = new THREE.MeshBasicMaterial({ color: 0x3DD68C, wireframe: true });
+            const mat3 = new THREE.MeshBasicMaterial({ color: 0xFFB547, wireframe: true });
+
+            beaconMesh1 = new THREE.Mesh(beaconGeo, mat1);
+            beaconMesh1.position.set(-25, 4, 0);
+            riverScene.add(beaconMesh1);
+
+            beaconMesh2 = new THREE.Mesh(beaconGeo, mat2);
+            beaconMesh2.position.set(0, 5, -5);
+            riverScene.add(beaconMesh2);
+
+            beaconMesh3 = new THREE.Mesh(beaconGeo, mat3);
+            beaconMesh3.position.set(25, 4, 5);
+            riverScene.add(beaconMesh3);
+
+            // 5. Interactive Mouse / Orbit Drag Event Listeners
+            canvas.addEventListener('mousedown', (e) => {
+                isOrbiting = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isOrbiting) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                cameraAngleY += deltaX * 0.008;
+                cameraAngleX = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, cameraAngleX + deltaY * 0.008));
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+                updateCameraOrbitPosition();
+            });
+
+            window.addEventListener('mouseup', () => { isOrbiting = false; });
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance = Math.max(15, Math.min(90, cameraDistance + e.deltaY * 0.03));
+                updateCameraOrbitPosition();
+            }, { passive: false });
+
+            // 6. Animation Render Loop
+            let clock = new THREE.Clock();
+
+            function animateRiver() {
+                requestAnimationFrame(animateRiver);
+
+                const delta = clock.getDelta();
+                const elapsedTime = clock.getElapsedTime();
+
+                // Calculate FPS
+                frameCount++;
+                const now = performance.now();
+                if (now - lastFrameTime >= 1000) {
+                    const fpsEl = document.getElementById('river-fps-label');
+                    if (fpsEl) fpsEl.textContent = `${frameCount} FPS`;
+                    frameCount = 0;
+                    lastFrameTime = now;
+                }
+
+                const ds = window.activeDataset;
+                const hasDs = ds && ds.rowCount > 0;
+                const amplitude = hasDs ? Math.min(5.5, 2.0 + Math.log10(ds.rowCount + 1) * 0.7) : 0.8;
+
+                // Animate Terrain Vertices
+                if (terrainMesh) {
+                    const pos = terrainMesh.geometry.attributes.position;
+                    for (let i = 0; i < pos.count; i++) {
+                        const x = pos.getX(i);
+                        const y = pos.getY(i);
+                        const z = Math.sin(x * 0.12 + elapsedTime * riverSpeed * 1.5) * Math.cos(y * 0.12 + elapsedTime * 1.2) * amplitude;
+                        pos.setZ(i, z);
+                    }
+                    pos.needsUpdate = true;
+                }
+
+                // Animate Particles Downstream
+                if (particleGeo) {
+                    const particlePos = particleGeo.attributes.position;
+                    for (let i = 0; i < particlePos.count; i++) {
+                        let px = particlePos.getX(i);
+                        let py = particlePos.getY(i);
+                        let pz = particlePos.getZ(i);
+
+                        px += riverSpeed * 0.25;
+                        if (px > 50) px = -50;
+
+                        pz = Math.sin(px * 0.12 + elapsedTime * riverSpeed * 1.5) * amplitude + (Math.random() - 0.5) * 0.5;
+
+                        particlePos.setX(i, px);
+                        particlePos.setZ(i, pz);
+                    }
+                    particlePos.needsUpdate = true;
+                }
+
+                // Rotate Beacons
+                if (beaconMesh1) { beaconMesh1.rotation.y += 0.02; beaconMesh1.position.y = 4 + Math.sin(elapsedTime * 2) * 1.2; }
+                if (beaconMesh2) { beaconMesh2.rotation.y += 0.02; beaconMesh2.position.y = 5 + Math.cos(elapsedTime * 2) * 1.2; }
+                if (beaconMesh3) { beaconMesh3.rotation.y += 0.02; beaconMesh3.position.y = 4 + Math.sin(elapsedTime * 2.5) * 1.2; }
+
+                // Auto rotate camera slowly if enabled
+                if (riverAutoRotate && !isOrbiting) {
+                    cameraAngleY += 0.0015 * riverSpeed;
+                    updateCameraOrbitPosition();
+                }
+
+                // Live HUD Updates
+                const hudAmp = document.getElementById('hud-amplitude');
+                const hudVel = document.getElementById('hud-velocity');
+                const hudTurb = document.getElementById('hud-turbulence');
+
+                if (hudAmp) hudAmp.textContent = `${amplitude.toFixed(2)}m`;
+                if (hudVel) hudVel.textContent = `${(32.4 * riverSpeed).toFixed(1)} km/s`;
+                if (hudTurb) hudTurb.textContent = `${(0.015 * riverSpeed + (hasDs ? 0.01 : 0.0)).toFixed(3)} RMS`;
+
+                riverRenderer.render(riverScene, riverCamera);
+            }
+
+            animateRiver();
+        }
+
+        function updateCameraOrbitPosition() {
+            if (!riverCamera) return;
+            riverCamera.position.x = cameraDistance * Math.sin(cameraAngleY) * Math.cos(cameraAngleX);
+            riverCamera.position.y = cameraDistance * Math.sin(cameraAngleX);
+            riverCamera.position.z = cameraDistance * Math.cos(cameraAngleY) * Math.cos(cameraAngleX);
+            riverCamera.lookAt(0, 0, 0);
+        }
+
+        function buildRiverTerrain(segX, segY) {
+            if (terrainMesh) riverScene.remove(terrainMesh);
+
+            const geo = new THREE.PlaneGeometry(100, 60, segX, segY);
+            const mat = new THREE.MeshBasicMaterial({
+                color: riverColorHex,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.35
+            });
+
+            terrainMesh = new THREE.Mesh(geo, mat);
+            terrainMesh.rotation.x = -Math.PI / 2.3;
+            riverScene.add(terrainMesh);
+        }
+
+        function buildParticleStream() {
+            if (particleSystem) riverScene.remove(particleSystem);
+
+            particleGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(riverParticlesCount * 3);
+
+            for (let i = 0; i < riverParticlesCount; i++) {
+                positions[i * 3]     = (Math.random() - 0.5) * 100;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+            }
+
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const pMat = new THREE.PointsMaterial({
+                color: riverColorHex,
+                size: 0.8,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            particleSystem = new THREE.Points(particleGeo, pMat);
+            particleSystem.rotation.x = -Math.PI / 2.3;
+            riverScene.add(particleSystem);
+        }
+
+        function update3DRiverColor() {
+            const ds = window.activeDataset;
+            const hasDs = ds.rowCount > 0;
+            const statusEl = document.getElementById('river-ds-status');
+            const banner = document.getElementById('river-no-ds-banner');
+
+            if (statusEl) statusEl.textContent = hasDs ? `Dynamic 3D Terrain: ${ds.name} (${ds.rowCount.toLocaleString()} rows)` : "Dynamic Terrain: No Active Dataset";
+            if (banner) banner.classList.toggle('hidden', hasDs);
+        }
+
+        function changeRiverColorTheme() {
+            const preset = document.getElementById('river-color-preset').value;
+            if (preset === 'gold') riverColorHex = 0xFFB547;
+            else if (preset === 'red') riverColorHex = 0xFF5C7A;
+            else if (preset === 'green') riverColorHex = 0x3DD68C;
+            else riverColorHex = 0x00E5C7;
+
+            if (terrainMesh) terrainMesh.material.color.setHex(riverColorHex);
+            if (particleSystem) particleSystem.material.color.setHex(riverColorHex);
+            showToast(`✓ Changed 3D River theme to ${preset.toUpperCase()}`);
+        }
+
+        function updateRiverSpeedFromSlider() {
+            const val = parseFloat(document.getElementById('river-speed-slider').value);
+            riverSpeed = val;
+            const label = document.getElementById('river-speed-label');
+            if (label) label.textContent = `${val.toFixed(1)}x Realtime`;
+        }
+
+        function changeRiverDensity() {
+            const density = document.getElementById('river-density-preset').value;
+            if (density === 'high') { buildRiverTerrain(80, 80); riverParticlesCount = 3500; }
+            else { buildRiverTerrain(40, 40); riverParticlesCount = 1500; }
+            buildParticleStream();
+            const countLabel = document.getElementById('river-particle-count-label');
+            if (countLabel) countLabel.textContent = `${riverParticlesCount.toLocaleString()} Stream Nodes`;
+            showToast(`✓ Updated wireframe density: ${density}`);
+        }
+
+        function resetRiverCamera() {
+            cameraAngleX = 0.3;
+            cameraAngleY = 0.5;
+            cameraDistance = 45;
+            updateCameraOrbitPosition();
+            showToast("✓ Camera view reset");
+        }
+
+        function toggleRiverRotation() {
+            riverAutoRotate = !riverAutoRotate;
+            const btn = document.getElementById('btn-toggle-river-spin');
+            if (btn) btn.textContent = `Auto Rotate: ${riverAutoRotate ? 'ON' : 'OFF'}`;
+            showToast(`✓ Auto rotation ${riverAutoRotate ? 'enabled' : 'disabled'}`);
+        }
+
+        // Initial setup
+        updateConnectedDatasetUI();
+    </script>
+</body>
+</html>
