@@ -14,3 +14,9 @@ data_engine.exe
 .DS_Store
 Thumbs.db
 .streamlit/secrets.toml
+
+# Runtime artifacts
+*.pid
+*.err
+*.out
+streamlit_visual*
