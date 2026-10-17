@@ -1,164 +1,118 @@
----
-title: Hybrid Data Pipeline - Gurgaon Housing Price Predictor
-emoji: 🏠
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
----
+# Hybrid Data Pipeline
 
-# Hybrid Data Pipeline: Gurgaon Housing Price Predictor
+**A C++ data engine feeding a Python machine-learning workflow across a file boundary — and a CI job that proves the seam still works.**
+
+A C++17 engine models and generates synthetic housing records with a seeded
+`std::mt19937`, writes them to CSV, and hands that file to a Pandas + scikit-learn
+layer that cleans, trains, and evaluates. Streamlit sits on top; Docker packages the
+whole chain.
+
+`C++17` `Python 3.11` `Pandas` `scikit-learn` `Streamlit` `Docker` · MIT
 
 [![Build Check](https://github.com/sheikhayaan/Hybrid-Data-Pipeline/actions/workflows/build-check.yml/badge.svg)](https://github.com/sheikhayaan/Hybrid-Data-Pipeline/actions/workflows/build-check.yml)
 
-## What this project actually demonstrates
+---
 
-This is a cross-language systems integration project. A C++ data engine models and generates synthetic Gurgaon housing records, writes them to a CSV file boundary, and hands that file to a Python analytics layer built with Pandas and Scikit-Learn.
+## Why this exists
 
-The headline is the pipeline shape: C++ file I/O, reproducible RNG, and simple struct-based data modeling feeding a Python ingestion, cleaning, training, and evaluation workflow.
+Cross-language pipelines usually rot at the seam, where two runtimes quietly disagree
+about the data between them: a column renamed, a unit changed, a float formatted
+differently. This project is built so that the seam is the *only* interface, and so
+that CI exercises it end to end on every push.
 
-## Architecture diagram
+## Architecture
 
-```text
-+------------------+        +-----------------------------+        +---------------------------+
-| data_engine.cpp  | -----> | synthetic_housing_data.csv  | -----> | model_pipeline.py         |
-| C++ RNG/modeling |        | CSV file boundary           |        | Pandas + Scikit-Learn ML  |
-+------------------+        +-----------------------------+        +---------------------------+
+```mermaid
+flowchart LR
+    A["data_engine.cpp<br/>C++17 · mt19937(42)"] -->|"synthetic_housing_data.csv"| B["model_pipeline.py<br/>Pandas clean · split · train"]
+    B -->|"metrics: MAE, R²"| C["app.py<br/>Streamlit UI"]
+    B --> D[("RandomForestRegressor<br/>200 trees · depth 8")]
+    A -.->|"compiled and run in CI"| E[GitHub Actions]
+    B -.->|"metrics asserted in CI"| E
+    C -.->|"HTTP smoke test in CI"| E
 ```
 
-## Tech stack
+**The pipeline, stage by stage**
 
-- C++17-compatible standard library
-- g++
-- Python 3
-- Pandas
-- Scikit-Learn
-- Streamlit
-- Plotly
-- Docker
+1. `data_engine.cpp` models a `Property` and generates rows with distributions over
+   square footage, bedrooms, property age and metro distance, then prices them. Seeded,
+   so the file is byte-stable.
+2. `synthetic_housing_data.csv` is the boundary: a header and fixed-point numbers, no
+   binary, no schema object shared between runtimes.
+3. `model_pipeline.py` loads and cleans with Pandas, splits with `random_state=42`,
+   trains `RandomForestRegressor(n_estimators=200, max_depth=8)` and reports mean
+   absolute error and R².
+4. `app.py` serves the result through Streamlit.
 
-## Running it
+## Design decisions
 
-Compile and run the C++ generator:
+1. **CSV instead of FFI, a socket, or a shared database.** The point of the exercise is
+   the contract, and a file is the smallest contract that can be inspected with `head`,
+   versioned in git, and replayed. Neither language calls into the other, so either half
+   can be run, tested, or replaced alone.
+2. **Seeded RNG (`std::mt19937 rng(42)`).** A generator that produces a different file
+   each run turns every metric into a lottery. With a fixed seed, "R² went down" means
+   the code changed.
+3. **Fixed-point formatting in the writer** (`std::fixed`, `setprecision(2)`) so the
+   Python parser never sees `1e+06` and the file stays diffable.
+4. **CI asserts the *output*, not just the exit code.** The workflow compiles with
+   `g++ -O2`, runs the engine for 1000 rows, greps the pipeline output for
+   `Mean Absolute Error:` and `R2 Score:`, boots Streamlit headless and `curl`s it, then
+   builds the Docker image. A pipeline that silently produces zero rows fails here.
+5. **Bounded, self-describing inputs.** The engine rejects a non-positive row count with
+   a message and a non-zero exit, instead of writing an empty file that would fail three
+   stages later.
+
+## Repository layout
+
+```
+data_engine.cpp              C++ generator: structs, distributions, CSV writer
+model_pipeline.py            load → clean → split → train → evaluate (prints metrics)
+app.py                       Streamlit front-end
+design-system.html           standalone design reference for the UI shell
+Dockerfile, docker-compose   container build; Render blueprint in render.yaml
+.github/workflows            build-check: compile → generate → train → smoke → docker
+```
+
+## Quick start
+
+**Local** (needs `g++` and Python 3.11):
 
 ```bash
 g++ -O2 data_engine.cpp -o data_engine
-./data_engine
-```
-
-Run the Python model pipeline:
-
-```bash
-python model_pipeline.py
-```
-
-## Running the frontend
-
-Install the frontend dependencies:
-
-```bash
+./data_engine 1000                 # writes synthetic_housing_data.csv
 pip install -r requirements.txt
+python model_pipeline.py           # prints MAE and R²
+streamlit run app.py               # http://localhost:8501
 ```
 
-Start the Streamlit app:
-
-```bash
-streamlit run app.py
-```
-
-Docker option:
+**Docker:**
 
 ```bash
 docker compose up --build
 ```
 
-## Results from this run
+If `g++` is unavailable, `data_gen_fallback.py` produces the same CSV shape in Python —
+the analytics half stays runnable, which is the whole point of the file boundary.
 
-The full pipeline was run end to end. Console output:
+## What the numbers mean
 
-```text
-Generated 1000 rows in synthetic_housing_data.csv
-Note: prices intentionally include non-linear age depreciation, diminishing metro-proximity effects, a sqft/metro interaction, Gaussian noise, and injected outliers.
-This dataset is for systems integration and pipeline demonstration, not real-world valuation accuracy.
+The reported MAE and R² describe how well the model recovers a *generated* price
+function. They are a correctness signal for the pipeline, not a claim about Gurgaon
+property prices.
 
-Loaded 1000 rows from synthetic_housing_data.csv
-Dropped 0 rows during cleaning
-Model: RandomForestRegressor(n_estimators=200, max_depth=8, random_state=42)
-Mean Absolute Error: 32.01 Lakhs
-R2 Score: 0.7704
-Feature importances:
-  sqft: 0.8203
-  metro_distance_km: 0.0789
-  age_years: 0.0742
-  bedrooms: 0.0267
+## Limits
 
-Reminder: these metrics reflect fit quality on synthetic, formula-generated data. They demonstrate a working ingestion -> training -> evaluation pipeline, not real-world predictive accuracy. See README.md for scope.
-```
+- **Synthetic data.** No real listings; the generator encodes the relationships the model
+  then learns, so a high R² is expected rather than impressive.
+- **The model is trained, reported, and dropped.** Nothing persists between runs — no
+  model registry, no versioned artefact; `model_pipeline.py` is a report, not a deployer.
+- **Single-file dataset.** At 1000 rows everything fits in memory; this is not a
+  distributed pipeline and does not pretend to be.
 
-## Why the accuracy numbers are not the headline
+## Author
 
-The data is synthetic and formula-generated. A model trained on data produced by a known formula partially learns the behavior of that formula, so the reported metrics should not be read as real Gurgaon price prediction accuracy.
+**Mohd Ayaan** — [github.com/sheikhayaan](https://github.com/sheikhayaan) ·
+[LinkedIn](https://linkedin.com/in/mohd-ayaan-7731b4381)
 
-The generator deliberately avoids a clean linear target by including:
-
-- Non-linear age depreciation using exponential decay
-- Diminishing returns for metro proximity
-- An interaction term between sqft and metro proximity
-- Additive Gaussian noise
-- Extra random shocks on a small percentage of rows to simulate outliers or data entry noise
-
-Measured on this run:
-
-- Mean Absolute Error: 32.01 Lakhs
-- R2 Score: 0.7704
-
-These numbers are useful as a sanity check that ingestion, cleaning, model fitting, and evaluation all work. They are not evidence of real-world valuation performance.
-
-## Honest limitations / what I'd do next
-
-- Swap in real housing transaction or listing data
-- Add categorical features such as locality, floor, furnishing status, builder, and property type
-- Move generator constants and model parameters into config files instead of hardcoding them
-- Add unit tests around data generation bounds, cleaning rules, and pipeline behavior
-
-## Deployment on Hugging Face Spaces
-
-This project ships as a Docker image and is configured to deploy to
-[Hugging Face Spaces](https://huggingface.co/spaces) using the Docker SDK.
-The app listens on port 7860 (the HF Spaces default) via the Dockerfile `CMD`.
-
-### One-time setup (manual, on huggingface.co)
-
-1. Create a new Space at **https://huggingface.co/new-space**
-   - **Space name:** `hybrid-data-pipeline` (or similar)
-   - **SDK:** Docker
-   - **Hardware:** CPU basic (free)
-2. Hugging Face will create a new, empty git repo for the Space at
-   `https://huggingface.co/spaces/<your-hf-username>/hybrid-data-pipeline`.
-
-### Push this code to the Space
-
-Hugging Face Spaces are their own git repos, separate from GitHub, but they
-can be kept in sync. From the root of this project:
-
-```bash
-# Add the Space as a second remote (replace <your-hf-username>)
-git remote add space https://huggingface.co/spaces/<your-hf-username>/hybrid-data-pipeline
-
-# Push the main branch to the Space remote
-git push space main
-```
-
-The Space will automatically build the `Dockerfile` and deploy. Build logs are
-visible in the Space's **Logs** tab on huggingface.co.
-
-### Notes
-
-- `git push origin main` still pushes to GitHub; `git push space main` pushes
-  to the HF Space. Run both to keep them in sync.
-- The first push will prompt for your HF credentials. Use your HF username and
-  a [access token with write permission](https://huggingface.co/settings/tokens)
-  as the password.
-- If you change the `app_port` in the README frontmatter, update the port in
-  the Dockerfile `CMD` and `EXPOSE` to match.
+MIT licensed. See [LICENSE](LICENSE).
