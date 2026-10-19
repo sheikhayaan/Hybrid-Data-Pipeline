@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="510" viewBox="0 0 920 510" role="img" aria-label="Codebase composition donut" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif">
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="52%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="cyanline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="emeraldline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101a2b" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#070c15" stop-opacity="0.96"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloViolet" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#1b2637" stroke-opacity="0.32" stroke-width="1"/>
+    </pattern>
+  </defs><rect width="920" height="510" fill="#05070d"/><rect width="920" height="510" fill="url(#grid)"/><text x="40.0" y="54.0" font-size="19" fill="#e8eefc" font-weight="700" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >CODEBASE COMPOSITION</text><text x="40.0" y="76.0" font-size="11" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >2,457 tracked lines · data artefact and docs excluded</text><circle cx="310" cy="262" r="148" fill="none" stroke="#a855f7" stroke-width="42" stroke-dasharray="740.30 189.62" stroke-dashoffset="-0.00" transform="rotate(-90 310 262)" stroke-opacity="0.92" filter="url(#glow)"/><circle cx="310" cy="262" r="148" fill="none" stroke="#22d3ee" stroke-width="42" stroke-dasharray="89.32 840.59" stroke-dashoffset="-740.30" transform="rotate(-90 310 262)" stroke-opacity="0.92" filter="url(#glow)"/><circle cx="310" cy="262" r="148" fill="none" stroke="#f59e0b" stroke-width="42" stroke-dasharray="57.15 872.76" stroke-dashoffset="-829.62" transform="rotate(-90 310 262)" stroke-opacity="0.92" filter="url(#glow)"/><circle cx="310" cy="262" r="148" fill="none" stroke="#10b981" stroke-width="42" stroke-dasharray="43.15 886.77" stroke-dashoffset="-886.77" transform="rotate(-90 310 262)" stroke-opacity="0.92" filter="url(#glow)"/><circle cx="310" cy="262" r="115.0" fill="#05070d" fill-opacity="0.55"/><text x="310.0" y="258.0" font-size="42" fill="#e8eefc" font-weight="800" text-anchor="middle" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >2,457</text><text x="310.0" y="284.0" font-size="11" fill="#8b9bb4" font-weight="400" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >tracked lines</text><text x="310.0" y="304.0" font-size="10" fill="#5a677d" font-weight="400" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >4 groups</text><rect x="550" y="138" width="12" height="12" rx="3" fill="#a855f7" filter="url(#glow)"/><text x="576.0" y="150.0" font-size="13" fill="#e8eefc" font-weight="600" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >UI shell</text><text x="576.0" y="168.0" font-size="10.5" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >1,956 lines · 79.6%</text><rect x="550" y="200" width="12" height="12" rx="3" fill="#22d3ee" filter="url(#glow)"/><text x="576.0" y="212.0" font-size="13" fill="#e8eefc" font-weight="600" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >Python pipeline</text><text x="576.0" y="230.0" font-size="10.5" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >236 lines · 9.6%</text><rect x="550" y="262" width="12" height="12" rx="3" fill="#f59e0b" filter="url(#glow)"/><text x="576.0" y="274.0" font-size="13" fill="#e8eefc" font-weight="600" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >Infra + CI</text><text x="576.0" y="292.0" font-size="10.5" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >151 lines · 6.1%</text><rect x="550" y="324" width="12" height="12" rx="3" fill="#10b981" filter="url(#glow)"/><text x="576.0" y="336.0" font-size="13" fill="#e8eefc" font-weight="600" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >C++ engine</text><text x="576.0" y="354.0" font-size="10.5" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >114 lines · 4.6%</text><text x="40.0" y="470.0" font-size="11" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >index.html alone is 80% of the tracked code — the UI is the product surface.</text></svg>

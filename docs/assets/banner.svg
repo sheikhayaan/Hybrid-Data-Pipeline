@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-label="Hybrid Data Pipeline hero banner" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif">
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/><stop offset="52%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="cyanline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="emeraldline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#10b981"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101a2b" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#070c15" stop-opacity="0.96"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloViolet" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#1b2637" stroke-opacity="0.32" stroke-width="1"/>
+    </pattern>
+  </defs><rect width="1200" height="340" fill="#05070d"/><rect width="1200" height="340" fill="url(#grid)"/><circle cx="168" cy="168" r="210" fill="url(#halo)"/><circle cx="168" cy="168" r="250" fill="url(#haloViolet)"/><circle cx="168" cy="168" r="62" fill="none" stroke="#22d3ee" stroke-opacity="0.5" stroke-width="1.1" stroke-dasharray="0"/><circle cx="168" cy="168" r="100" fill="none" stroke="#3b82f6" stroke-opacity="0.5" stroke-width="1.1" stroke-dasharray="5 9"/><circle cx="168" cy="168" r="138" fill="none" stroke="#a855f7" stroke-opacity="0.5" stroke-width="1.1" stroke-dasharray="2 13"/><circle cx="168" cy="106" r="4.5" fill="#22d3ee" filter="url(#glow)"/><circle cx="268" cy="168" r="3.5" fill="#3b82f6" filter="url(#glow)"/><circle cx="122" cy="270" r="3.5" fill="#a855f7" filter="url(#glow)"/><path d="M168 132 L199 150 L199 186 L168 204 L137 186 L137 150 Z" fill="url(#card)" stroke="#22d3ee" stroke-opacity="0.75" stroke-width="1.6" filter="url(#glow)"/><path d="M158 158 L178 178 M178 158 L158 178" stroke="#22d3ee" stroke-width="2.4" stroke-linecap="round"/><text x="168.0" y="224.0" font-size="9.5" fill="#22d3ee" font-weight="700" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" letter-spacing="1.1" >C++ → CSV → ML</text><text x="322.0" y="132.0" font-size="50" fill="url(#wordmark)" font-weight="800" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" letter-spacing="1.5" >HYBRID DATA PIPELINE</text><text x="324.0" y="172.0" font-size="16.5" fill="#8b9bb4" font-weight="400" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >A C++ engine, a CSV contract, a scikit-learn model — measured end to end.</text><text x="324.0" y="204.0" font-size="13" fill="#63718a" font-weight="400" text-anchor="start" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" >One seam. One artifact. A CI job that proves the seam still holds.</text><rect x="324.0" y="238.0" width="57.0" height="26" rx="13" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity="0.45"/><text x="352.5" y="255.0" font-size="11" fill="#22d3ee" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >C++17</text><rect x="391.0" y="238.0" width="94.2" height="26" rx="13" fill="#3b82f6" fill-opacity="0.1" stroke="#3b82f6" stroke-opacity="0.45"/><text x="438.1" y="255.0" font-size="11" fill="#3b82f6" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >Python 3.11</text><rect x="495.2" y="238.0" width="100.4" height="26" rx="13" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.45"/><text x="545.4" y="255.0" font-size="11" fill="#10b981" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >pandas 3.0.3</text><rect x="605.6" y="238.0" width="137.6" height="26" rx="13" fill="#a855f7" fill-opacity="0.1" stroke="#a855f7" stroke-opacity="0.45"/><text x="674.4" y="255.0" font-size="11" fill="#a855f7" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >scikit-learn 1.8.0</text><rect x="753.2" y="238.0" width="125.2" height="26" rx="13" fill="#f59e0b" fill-opacity="0.1" stroke="#f59e0b" stroke-opacity="0.45"/><text x="815.8" y="255.0" font-size="11" fill="#f59e0b" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >Streamlit 1.58.0</text><rect x="888.4" y="238.0" width="63.2" height="26" rx="13" fill="#f43f5e" fill-opacity="0.1" stroke="#f43f5e" stroke-opacity="0.45"/><text x="920.0" y="255.0" font-size="11" fill="#f43f5e" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >Docker</text><rect x="961.6" y="238.0" width="112.8" height="26" rx="13" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity="0.45"/><text x="1018.0" y="255.0" font-size="11" fill="#22d3ee" font-weight="600" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >GitHub Actions</text><text x="324.0" y="306.0" font-size="10.5" fill="#5a677d" font-weight="400" text-anchor="start" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" >6 figures · regenerated by docs/assets/generate.py from bench_result.json</text></svg>

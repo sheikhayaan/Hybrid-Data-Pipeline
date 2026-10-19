@@ -1,0 +1,116 @@
+{
+  "generated_by": "docs/assets/bench.py",
+  "host": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.5",
+    "pandas": "3.0.3",
+    "scikit_learn": "1.8.0",
+    "rows": 1000
+  },
+  "compile": {
+    "command": "g++ -O2 data_engine.cpp",
+    "ms": 1477.04,
+    "cold_first_spawn_ms": 1961.21
+  },
+  "stages": {
+    "engine": {
+      "runs": 12,
+      "min_ms": 17.46,
+      "median_ms": 31.66,
+      "max_ms": 93.17,
+      "mean_ms": 37.29
+    },
+    "fallback": {
+      "runs": 12,
+      "min_ms": 161.93,
+      "median_ms": 344.18,
+      "max_ms": 492.33,
+      "mean_ms": 328.69
+    },
+    "load_clean": {
+      "runs": 12,
+      "min_ms": 5.98,
+      "median_ms": 13.39,
+      "max_ms": 20.8,
+      "mean_ms": 12.94
+    },
+    "train": {
+      "runs": 12,
+      "min_ms": 823.36,
+      "median_ms": 2037.6,
+      "max_ms": 2932.07,
+      "mean_ms": 1930.42
+    }
+  },
+  "samples": {
+    "engine": [
+      22.44,
+      34.02,
+      93.17,
+      32.11,
+      17.46,
+      19.12,
+      29.48,
+      67.71,
+      36.88,
+      31.21,
+      35.41,
+      28.48
+    ],
+    "fallback": [
+      161.93,
+      381.93,
+      481.3,
+      264.07,
+      194.15,
+      203.49,
+      492.33,
+      453.34,
+      348.79,
+      339.57,
+      357.94,
+      265.38
+    ],
+    "load_clean": [
+      20.8,
+      17.76,
+      7.87,
+      9.23,
+      5.98,
+      7.53,
+      16.6,
+      17.27,
+      10.72,
+      13.8,
+      12.97,
+      14.7
+    ],
+    "train": [
+      1478.75,
+      2932.07,
+      1243.15,
+      921.37,
+      823.36,
+      1881.85,
+      2628.39,
+      2524.72,
+      2275.0,
+      2465.95,
+      2193.36,
+      1797.08
+    ]
+  },
+  "model": {
+    "estimator": "RandomForestRegressor(n_estimators=200, max_depth=8, random_state=42)",
+    "rows_loaded": 1000,
+    "rows_dropped": 0,
+    "mae_lakhs": 32.01,
+    "r2": 0.7705,
+    "feature_importances": {
+      "sqft": 0.8203,
+      "metro_distance_km": 0.0789,
+      "age_years": 0.0742,
+      "bedrooms": 0.0266
+    }
+  }
+}
